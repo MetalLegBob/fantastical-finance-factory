@@ -106,7 +106,8 @@ The deployed binaries are reproducible with
 `solanafoundation/solana-verifiable-build` Docker images pinned by digest.
 
 Requirements: Docker, Rust, and `solana-verify` 0.4.11
-(`cargo install solana-verify --version 0.4.11 --locked`).
+(`cargo install solana-verify --version 0.4.11 --locked`). On Linux, install `libudev-dev` and
+`pkg-config` first.
 
 Two build images are used, because the programs were last deployed at different times:
 
