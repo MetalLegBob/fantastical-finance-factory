@@ -1,0 +1,39 @@
+[package]
+name = "arb-test-support"
+version = "0.1.0"
+edition = "2021"
+description = "Dr Fraudsworth minimal LiteSVM test-support primitives (Phase 158) — the slim shared subset the 158 arb harnesses import: the Anchor<->LiteSVM byte-bridge, Anchor discriminator helpers, the upgradeable-BPF installer (deploys the mock-arb-caller at arb_program_id()), and Token-2022/SPL mint + token-account installers. NOT a deployable Solana program; linked as a [dev-dependencies] of the arb test crates."
+
+[lib]
+# Plain lib — NOT cdylib. This is NOT a deployable Solana program; it is linked
+# into the arb test crates as a dev-dependency (mirrors the crates/arb-engine +
+# crates/transition-machine `crate-type = ["lib"]` precedent).
+crate-type = ["lib"]
+
+[dependencies]
+# Phase-158 MINIMAL subset (Open Question 1 / locked decision 2): the full
+# MILF-building crate (2037 lines, Phase-164 consolidation) depends on the Phase-159
+# deployable arb crate (absent in 158) + the arb firing crate + bincode + the
+# Pyth/transfer-hook surface. We port ONLY the helpers the 158 LiteSVM harnesses
+# (`arb_ix.rs` pattern) use, so the dep set shrinks to the proven-green LiteSVM stack
+# the in-tree program crates already declare (epoch-program/conversion-vault
+# [dev-dependencies] — verbatim pins, so cargo resolves against the existing lockfile
+# with no churn). NO dependency on the absent arb crates and NO PM/incentive deps.
+litesvm = "0.9.1"
+solana-sdk = "2.2"
+solana-program = "2.2"
+sha2 = "0.10"
+spl-token = "8.0"
+spl-token-2022 = "8.0"
+spl-associated-token-account = "7.0"
+anchor-lang = "0.32.1"
+# Modular Solana 3.x crates needed for litesvm 0.9.1 type compatibility (litesvm
+# returns these modular types from get_account()/send_transaction()). Verbatim from
+# the in-tree conversion-vault/epoch-program harness Cargo.toml.
+solana-address = "2.0"
+solana-keypair = "~3.1"
+solana-signer = "~3.0"
+solana-message = "~3.0"
+solana-transaction = { version = "~3.0", features = ["verify"] }
+solana-account = "3.3"
+solana-instruction = "~3.1"

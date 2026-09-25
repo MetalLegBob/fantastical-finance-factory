@@ -1,0 +1,44 @@
+# Rebuilds every program with solana-verify (pinned Docker image) and checks that each
+# executable hash matches verification/mainnet-hashes.json, i.e. the bytes deployed on mainnet.
+name: Reproduce mainnet hashes
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        library: [amm, transfer_hook, tax_program, epoch_program, staking, conversion_vault, vote_program]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@1.93.0
+
+      - name: Install solana-verify 0.4.11
+        run: cargo install solana-verify --version 0.4.11 --locked
+
+      - name: Build ${{ matrix.library }} in its pinned Docker image
+        run: |
+          image=$(jq -r --arg lib "${{ matrix.library }}" \
+            '.programs[] | select(.library == $lib) | .buildImage' verification/mainnet-hashes.json)
+          echo "image: $image"
+          solana-verify build --base-image "$image" --library-name ${{ matrix.library }}
+
+      - name: Compare executable hash
+        run: |
+          expected=$(jq -r --arg lib "${{ matrix.library }}" \
+            '.programs[] | select(.library == $lib) | .executableHash' verification/mainnet-hashes.json)
+          actual=$(solana-verify get-executable-hash target/deploy/${{ matrix.library }}.so | tail -n1)
+          echo "expected: $expected"
+          echo "actual:   $actual"
+          test -n "$expected" && test "$expected" = "$actual"

@@ -1,0 +1,62 @@
+[package]
+name = "vote-program"
+version = "0.1.0"
+edition = "2021"
+description = "Dr Fraudsworth Weekly PROFIT-Staker Vote Program (Phase 161) — stake-weighted weekly vote between the two haul policies (Policy A buy-and-burn vs Policy B double-sided LP-add), materializing the winner into the HaulPolicy singleton the Phase-162 disposition reader consumes. Vote-mechanism ONLY: zero token transfers, zero execution."
+
+[lib]
+# Deployable Solana program — emits a cdylib BPF binary AND a rlib (the `lib` half
+# lets tests/IDL link it). Same layout as programs/arb-program.
+crate-type = ["cdylib", "lib"]
+
+[features]
+# Mirrors the in-tree deployable-program layout (see programs/arb-program/Cargo.toml).
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+# Cluster features. They gate `constants::WEEK_SECONDS` (3600 devnet / 604_800
+# otherwise) and the cross-program `staking_program_id()` ref helper (devnet-deployed
+# staking id vs canonical). They do NOT switch this program's own declare_id — that is
+# a SINGLE clean id with NO #[cfg] arms (arb-program precedent, same address on every
+# cluster). Mutual exclusion is enforced by a compile_error! guard in lib.rs.
+devnet = []
+localnet = []
+
+[dependencies]
+# Version pins lifted EXACTLY from the workspace's Anchor 0.32.1 lock (the same idiom
+# every in-tree program uses). NO anchor-spl: Phase 161 touches NO tokens — the vote
+# program is a pure-data mechanism (Tally/Receipt/HaulPolicy). NO direct
+# solana-program dep — anchor-lang re-exports it.
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+# Standard Solana on-chain security.txt — same idiom as arb-program/conversion-vault
+# (gated on `not(no-entrypoint)` in lib.rs so it ships only in the real binary).
+solana-security-txt = "1.1.1"
+
+[dev-dependencies]
+# LiteSVM in-process harness + Proptest (optional week-math props; heavy Kani → 163).
+# Versions pinned EXACTLY (VERBATIM) to the arb-program dev-deps so Cargo.lock churn
+# is zero — the workspace lockfile already carries every one of these.
+proptest = "1.9"
+litesvm = "0.9.1"
+solana-sdk = "2.2"
+solana-program = "2.2"
+spl-token = "8.0"
+spl-token-2022 = "8.0"
+spl-associated-token-account = "7.0"
+# Modular Solana 3.x crates needed for litesvm type compatibility (verbatim from the
+# arb-program / tax-program / conversion-vault dev-deps — these MUST match litesvm
+# 0.9.1's concrete TransactionError type, which is the Solana 3.x modular crate).
+solana-address = "2.0"
+solana-keypair = "~3.1"
+solana-signer = "~3.0"
+solana-message = "~3.0"
+solana-transaction = { version = "~3.0", features = ["verify"] }
+solana-account = "3.3"
+solana-instruction = "~3.1"
+sha2 = "0.10"
+# The slim 158 test-support helpers (byte-bridge / discriminators / upgradeable-BPF
+# installer / set_account primitives) the LiteSVM harness reuses verbatim.
+arb-test-support = { path = "../../crates/arb-test-support" }

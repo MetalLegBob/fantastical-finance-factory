@@ -1,0 +1,21 @@
+[workspace]
+members = [
+    "programs/amm",
+    "programs/conversion-vault",
+    "programs/epoch-program",
+    "programs/staking",
+    "programs/tax-program",
+    "programs/transfer-hook",
+    "programs/vote-program",
+    "crates/arb-test-support",
+]
+resolver = "2"
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false

@@ -1,0 +1,3038 @@
+{
+  "address": "43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj",
+  "metadata": {
+    "name": "tax_program",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Dr Fraudsworth Tax Program - Asymmetric taxation and atomic distribution"
+  },
+  "instructions": [
+    {
+      "name": "distribute_swept",
+      "docs": [
+        "Distribute an exact nonzero SOL amount through the deployed 71/24/5 split.",
+        "",
+        "Only an ArbConfig wallet may sign. The caller's system account is the",
+        "direct source, `lamports == 0` rejects, and no timing or pause law is",
+        "enforced. Remainder and dust behavior come only from the frozen helper."
+      ],
+      "discriminator": [
+        242,
+        160,
+        150,
+        161,
+        32,
+        173,
+        225,
+        236
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "docs": [
+            "Authorized ArbConfig wallet and direct lamport source."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Epoch Program's canonical ArbConfig PDA."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Read-only accounting source for the emitted epoch number."
+          ]
+        },
+        {
+          "name": "staking_escrow",
+          "docs": [
+            "Staking Program escrow - receives 71% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "stake_pool",
+          "docs": [
+            "Staking Program's StakePool PDA - updated by deposit_rewards CPI"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "tax_authority",
+          "docs": [
+            "Tax Program's tax_authority PDA - signs Staking Program CPI"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  97,
+                  120,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_vault",
+          "docs": [
+            "Carnage Fund vault - receives 24% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "Protocol treasury - receives 5% of tax (native SOL)"
+          ],
+          "writable": true,
+          "address": "GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN"
+        },
+        {
+          "name": "staking_program",
+          "docs": [
+            "Staking Program for deposit_rewards CPI"
+          ],
+          "address": "12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH"
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program for the frozen helper's native SOL transfers."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "lamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_wsol_intermediary",
+      "docs": [
+        "Initialize the WSOL intermediary account (one-time admin setup).",
+        "Must be called before the first sell swap.",
+        "Creates a WSOL token account at the intermediary PDA, owned by swap_authority."
+      ],
+      "discriminator": [
+        240,
+        113,
+        117,
+        75,
+        43,
+        61,
+        230,
+        214
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "docs": [
+            "Admin (payer). Only needs to be called once during protocol setup."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "wsol_intermediary",
+          "docs": [
+            "WSOL intermediary PDA -- must not exist yet."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  115,
+                  111,
+                  108,
+                  95,
+                  105,
+                  110,
+                  116,
+                  101,
+                  114,
+                  109,
+                  101,
+                  100,
+                  105,
+                  97,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "swap_authority PDA -- will be set as the owner of the WSOL token account."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "WSOL mint (NATIVE_MINT)."
+          ]
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "SPL Token program."
+          ]
+        },
+        {
+          "name": "program",
+          "docs": [
+            "The Tax Program — used to look up its ProgramData address."
+          ],
+          "address": "43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj"
+        },
+        {
+          "name": "program_data",
+          "docs": [
+            "ProgramData account — upgrade_authority must match admin."
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program for account creation."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "swap_arb_wallet",
+      "docs": [
+        "Execute a tax-free swap for an authorized ArbConfig wallet.",
+        "",
+        "Generic over all 22 faction pools. This bot lane is deliberately not",
+        "pause-gated and needs no wallet whitelist entries: a whitelisted pool",
+        "vault is the counterparty to every transfer-hook movement."
+      ],
+      "discriminator": [
+        199,
+        3,
+        192,
+        102,
+        34,
+        120,
+        87,
+        163
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "docs": [
+            "Transaction signer; handler requires ArbConfig wallet A or B."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Epoch Program's canonical ArbConfig PDA.",
+            "fields are validated in the handler via the GAP-1 cross-program idiom."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "Tax Program's `swap_authority` PDA -- signs the AMM CPI.",
+            "Same derivation as `swap_sol_buy`/`swap_sol_sell`/`swap_exempt`.",
+            ""
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "docs": [
+            "AMM pool state -- mutable for reserve updates."
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_a",
+          "docs": [
+            "Pool vault for positional token A."
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_b",
+          "docs": [
+            "Pool vault for positional token B."
+          ],
+          "writable": true
+        },
+        {
+          "name": "mint_a",
+          "docs": [
+            "Positional mint A."
+          ]
+        },
+        {
+          "name": "mint_b",
+          "docs": [
+            "Positional mint B."
+          ]
+        },
+        {
+          "name": "user_token_a",
+          "docs": [
+            "Wallet's token-A account; source or destination according to direction."
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_token_b",
+          "docs": [
+            "Wallet's token-B account; source or destination according to direction."
+          ],
+          "writable": true
+        },
+        {
+          "name": "amm_program",
+          "docs": [
+            "AMM Program for the swap CPI."
+          ],
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        },
+        {
+          "name": "token_program_a",
+          "docs": [
+            "Token program for positional mint A (SPL Token or Token-2022)."
+          ]
+        },
+        {
+          "name": "token_program_b",
+          "docs": [
+            "Token program for positional mint B (SPL Token or Token-2022)."
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program (may be needed for hook accounts)."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "direction",
+          "type": "u8"
+        },
+        {
+          "name": "minimum_out",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "swap_exempt",
+      "docs": [
+        "Execute tax-exempt swap for Carnage Fund (bidirectional).",
+        "",
+        "Called by Epoch Program during Carnage rebalancing.",
+        "No tax applied - only AMM LP fee (1%) applies.",
+        "",
+        "# Arguments",
+        "* `amount_in` - Amount to swap (SOL for buy, token for sell)",
+        "* `direction` - 0 = buy (SOL->Token), 1 = sell (Token->SOL)",
+        "* `is_crime` - true = CRIME pool, false = FRAUD pool"
+      ],
+      "discriminator": [
+        244,
+        95,
+        90,
+        36,
+        153,
+        160,
+        55,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "carnage_authority",
+          "docs": [
+            "Carnage authority PDA from Epoch Program.",
+            "",
+            "CRITICAL SECURITY: seeds::program ensures this PDA is derived from Epoch Program.",
+            "Only Epoch Program can produce a valid signer with these seeds.",
+            "",
+            "CROSS-PROGRAM DEPENDENCY:",
+            "- Tax Program's CARNAGE_SIGNER_SEED must match Epoch Program's derivation",
+            "- Tax Program's epoch_program_id() must match Epoch Program's declare_id!",
+            "- If either mismatch, swap_exempt will reject all Carnage calls",
+            ""
+          ],
+          "signer": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "Tax Program's swap_authority PDA - signs AMM CPI.",
+            "Same derivation as swap_sol_buy/swap_sol_sell.",
+            ""
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "docs": [
+            "AMM pool state - mutable for reserve updates"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_a",
+          "docs": [
+            "Pool's WSOL vault (Token A)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_b",
+          "docs": [
+            "Pool's CRIME/FRAUD vault (Token B)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "mint_a",
+          "docs": [
+            "WSOL mint"
+          ]
+        },
+        {
+          "name": "mint_b",
+          "docs": [
+            "CRIME or FRAUD mint (Token-2022)"
+          ]
+        },
+        {
+          "name": "user_token_a",
+          "docs": [
+            "Carnage's WSOL token account (or wrapping account)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_token_b",
+          "docs": [
+            "Carnage's CRIME/FRAUD token account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "amm_program",
+          "docs": [
+            "AMM Program for swap CPI"
+          ],
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        },
+        {
+          "name": "token_program_a",
+          "docs": [
+            "SPL Token program (for WSOL)"
+          ]
+        },
+        {
+          "name": "token_program_b",
+          "docs": [
+            "Token-2022 program (for CRIME/FRAUD)"
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program (may be needed for hook accounts)"
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "direction",
+          "type": "u8"
+        },
+        {
+          "name": "is_crime",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "swap_sol_buy",
+      "docs": [
+        "Execute a SOL -> CRIME/FRAUD swap with buy tax.",
+        "",
+        "Tax is deducted from SOL input before swap execution.",
+        "Distribution: 71% staking, 24% carnage, 5% treasury.",
+        "",
+        "# Arguments",
+        "* `amount_in` - Total SOL amount to spend (including tax)",
+        "* `minimum_output` - Minimum tokens expected (slippage protection)",
+        "* `is_crime` - true = CRIME pool, false = FRAUD pool"
+      ],
+      "discriminator": [
+        158,
+        213,
+        169,
+        65,
+        11,
+        116,
+        176,
+        25
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "docs": [
+            "User initiating the swap - signs and pays SOL for tax"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "EpochState account from Epoch Program.",
+            "Provides current tax rates for the swap.",
+            "",
+            "- Owner check: must be Epoch Program (prevents fake 0% tax)",
+            "- Deserialization validates discriminator",
+            "- initialized flag checked"
+          ]
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "Tax Program's swap_authority PDA - signs AMM CPI"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tax_authority",
+          "docs": [
+            "Tax Program's tax_authority PDA - signs Staking Program CPI"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  97,
+                  120,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "docs": [
+            "AMM pool state - mutable for reserve updates"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_a",
+          "docs": [
+            "Pool's WSOL vault (Token A)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_b",
+          "docs": [
+            "Pool's CRIME/FRAUD vault (Token B)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "mint_a",
+          "docs": [
+            "WSOL mint"
+          ]
+        },
+        {
+          "name": "mint_b",
+          "docs": [
+            "CRIME or FRAUD mint (Token-2022)"
+          ]
+        },
+        {
+          "name": "user_token_a",
+          "docs": [
+            "User's WSOL token account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_token_b",
+          "docs": [
+            "User's CRIME/FRAUD token account"
+          ],
+          "writable": true
+        },
+        {
+          "name": "stake_pool",
+          "docs": [
+            "Staking Program's StakePool PDA - updated by deposit_rewards CPI"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "staking_escrow",
+          "docs": [
+            "Staking Program escrow - receives 71% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "carnage_vault",
+          "docs": [
+            "Carnage Fund vault - receives 24% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "Protocol treasury - receives 5% of tax (native SOL)"
+          ],
+          "writable": true,
+          "address": "GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN"
+        },
+        {
+          "name": "amm_program",
+          "docs": [
+            "AMM Program for swap CPI"
+          ],
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        },
+        {
+          "name": "token_program_a",
+          "docs": [
+            "SPL Token program (for WSOL)"
+          ]
+        },
+        {
+          "name": "token_program_b",
+          "docs": [
+            "Token-2022 program (for CRIME/FRAUD)"
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program (for native SOL transfers)"
+          ],
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "staking_program",
+          "docs": [
+            "Staking Program for deposit_rewards CPI"
+          ],
+          "address": "12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_output",
+          "type": "u64"
+        },
+        {
+          "name": "is_crime",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "swap_sol_sell",
+      "docs": [
+        "Execute a CRIME/FRAUD -> SOL swap with sell tax.",
+        "",
+        "Tax is deducted from SOL output after swap execution.",
+        "Distribution: 71% staking, 24% carnage, 5% treasury.",
+        "",
+        "# Arguments",
+        "* `amount_in` - Token amount to sell",
+        "* `minimum_output` - Minimum SOL to receive AFTER tax (slippage protection)",
+        "* `is_crime` - true = CRIME pool, false = FRAUD pool"
+      ],
+      "discriminator": [
+        136,
+        242,
+        218,
+        149,
+        17,
+        222,
+        250,
+        240
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "docs": [
+            "User initiating the swap - signs SPL Token transfer of tax WSOL"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "EpochState account from Epoch Program.",
+            "Provides current tax rates for the swap.",
+            "",
+            "- Owner check: must be Epoch Program (prevents fake 0% tax)",
+            "- Deserialization validates discriminator",
+            "- initialized flag checked"
+          ]
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "Tax Program's swap_authority PDA - signs AMM CPI and tax distribution.",
+            "Mutable because it receives lamports from close_account (unwrap)",
+            "and sends them to tax destinations via system transfers."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tax_authority",
+          "docs": [
+            "Tax Program's tax_authority PDA - signs Staking Program CPI"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  97,
+                  120,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "docs": [
+            "AMM pool state - mutable for reserve updates"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_a",
+          "docs": [
+            "Pool's WSOL vault (Token A)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_b",
+          "docs": [
+            "Pool's CRIME/FRAUD vault (Token B)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "mint_a",
+          "docs": [
+            "WSOL mint"
+          ]
+        },
+        {
+          "name": "mint_b",
+          "docs": [
+            "CRIME or FRAUD mint (Token-2022)"
+          ]
+        },
+        {
+          "name": "user_token_a",
+          "docs": [
+            "User's WSOL token account - receives gross output from AMM"
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_token_b",
+          "docs": [
+            "User's CRIME/FRAUD token account - sends tokens to AMM"
+          ],
+          "writable": true
+        },
+        {
+          "name": "stake_pool",
+          "docs": [
+            "Staking Program's StakePool PDA - updated by deposit_rewards CPI"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "staking_escrow",
+          "docs": [
+            "Staking Program escrow - receives 71% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "carnage_vault",
+          "docs": [
+            "Carnage Fund vault - receives 24% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "Protocol treasury - receives 5% of tax (native SOL)"
+          ],
+          "writable": true,
+          "address": "GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN"
+        },
+        {
+          "name": "wsol_intermediary",
+          "docs": [
+            "Protocol-owned WSOL intermediary for atomic tax extraction.",
+            "Holds tax portion of WSOL between transfer and unwrap.",
+            "Owned by swap_authority PDA.",
+            "Closed and re-created each sell to convert WSOL -> native SOL.",
+            "",
+            "Account may be zero-lamport (just been closed) at validation time",
+            "during same-TX sequential sells, but will be recreated within the handler."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  115,
+                  111,
+                  108,
+                  95,
+                  105,
+                  110,
+                  116,
+                  101,
+                  114,
+                  109,
+                  101,
+                  100,
+                  105,
+                  97,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "amm_program",
+          "docs": [
+            "AMM Program for swap CPI"
+          ],
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        },
+        {
+          "name": "token_program_a",
+          "docs": [
+            "SPL Token program (for WSOL)"
+          ]
+        },
+        {
+          "name": "token_program_b",
+          "docs": [
+            "Token-2022 program (for CRIME/FRAUD)"
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program (for native SOL transfers and account creation)"
+          ],
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "staking_program",
+          "docs": [
+            "Staking Program for deposit_rewards CPI"
+          ],
+          "address": "12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_output",
+          "type": "u64"
+        },
+        {
+          "name": "is_crime",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "swap_spl_buy",
+      "docs": [
+        "Execute a generic non-SOL quote -> CRIME/FRAUD taxed swap.",
+        "",
+        "Pool orientation and faction identity are derived from the pool. Tax is",
+        "skimmed into the quote asset's sweep ATA, and faction transfer-hook",
+        "accounts are forwarded through `remaining_accounts`."
+      ],
+      "discriminator": [
+        145,
+        254,
+        202,
+        19,
+        150,
+        31,
+        185,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "epoch_state"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "vault_a",
+          "writable": true
+        },
+        {
+          "name": "vault_b",
+          "writable": true
+        },
+        {
+          "name": "mint_a"
+        },
+        {
+          "name": "mint_b"
+        },
+        {
+          "name": "user_token_a",
+          "writable": true
+        },
+        {
+          "name": "user_token_b",
+          "writable": true
+        },
+        {
+          "name": "swap_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "sweep_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  101,
+                  101,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "sweep_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "sweep_authority"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "token_program_a"
+        },
+        {
+          "name": "token_program_b"
+        },
+        {
+          "name": "amm_program",
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_output",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "swap_spl_sell",
+      "docs": [
+        "Execute a generic CRIME/FRAUD -> non-SOL quote taxed swap.",
+        "",
+        "`minimum_output` is the quote amount received AFTER tax. The canonical",
+        "sweep ATA is the AMM's quote-output account; tax rests there until a",
+        "later withdraw/distribute flow, while one PDA-signed transfer forwards",
+        "the net amount to the dedicated user quote destination."
+      ],
+      "discriminator": [
+        250,
+        17,
+        196,
+        68,
+        180,
+        202,
+        218,
+        155
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "epoch_state"
+        },
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "vault_a",
+          "writable": true
+        },
+        {
+          "name": "vault_b",
+          "writable": true
+        },
+        {
+          "name": "mint_a"
+        },
+        {
+          "name": "mint_b"
+        },
+        {
+          "name": "user_token_a",
+          "docs": [
+            "Pool-positional faction input or sweep-ATA quote output (see struct docs)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_token_b",
+          "docs": [
+            "Pool-positional faction input or sweep-ATA quote output (see struct docs)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "swap_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "sweep_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  101,
+                  101,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote_mint"
+        },
+        {
+          "name": "sweep_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "sweep_authority"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_quote",
+          "docs": [
+            "Dedicated net-output destination. Its authority is intentionally not",
+            "constrained; the token program validates only that its mint matches."
+          ],
+          "writable": true
+        },
+        {
+          "name": "quote_token_program"
+        },
+        {
+          "name": "token_program_a"
+        },
+        {
+          "name": "token_program_b"
+        },
+        {
+          "name": "amm_program",
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_output",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_sweep",
+      "docs": [
+        "Withdraw quote-asset tax from the canonical sweep ATA.",
+        "",
+        "Only an ArbConfig wallet may sign, and the destination owner must be a",
+        "registered wallet or the ArbConfig authority. `amount == 0` means the",
+        "full sweep balance; an already empty full sweep succeeds silently. This",
+        "differs deliberately from `distribute_swept(0)`, which rejects."
+      ],
+      "discriminator": [
+        27,
+        226,
+        35,
+        139,
+        166,
+        150,
+        151,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "docs": [
+            "Authorized ArbConfig wallet and payer for a missing destination ATA."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Epoch Program's canonical ArbConfig PDA."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "sweep_authority",
+          "docs": [
+            "Tax Program PDA that owns every per-quote sweep ATA."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  101,
+                  101,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "quote_mint",
+          "docs": [
+            "Quote asset held in sweep custody (SPL Token or Token-2022)."
+          ]
+        },
+        {
+          "name": "sweep_ata",
+          "docs": [
+            "Canonical sweep-authority ATA for this quote mint."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "sweep_authority"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "destination_owner",
+          "docs": [
+            "Destination owner, checked against wallet A, wallet B, and authority."
+          ]
+        },
+        {
+          "name": "destination_ata",
+          "docs": [
+            "Canonical destination ATA, created idempotently with caller-paid rent."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "destination_owner"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "Token program selected by the quote mint (SPL Token or Token-2022)."
+          ]
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ArbSwapExecuted",
+      "discriminator": [
+        73,
+        113,
+        109,
+        198,
+        112,
+        42,
+        79,
+        29
+      ]
+    },
+    {
+      "name": "ExemptSwap",
+      "discriminator": [
+        23,
+        109,
+        122,
+        58,
+        241,
+        240,
+        226,
+        146
+      ]
+    },
+    {
+      "name": "SplSwapExecuted",
+      "discriminator": [
+        242,
+        83,
+        202,
+        55,
+        161,
+        141,
+        175,
+        133
+      ]
+    },
+    {
+      "name": "SweepWithdrawn",
+      "discriminator": [
+        85,
+        31,
+        176,
+        74,
+        168,
+        253,
+        98,
+        154
+      ]
+    },
+    {
+      "name": "SweptDistributed",
+      "discriminator": [
+        216,
+        24,
+        160,
+        130,
+        111,
+        189,
+        252,
+        82
+      ]
+    },
+    {
+      "name": "TaxedSwap",
+      "discriminator": [
+        237,
+        18,
+        78,
+        75,
+        209,
+        198,
+        192,
+        30
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidPoolType",
+      "msg": "Invalid pool type for this operation"
+    },
+    {
+      "code": 6001,
+      "name": "TaxOverflow",
+      "msg": "Tax calculation overflow"
+    },
+    {
+      "code": 6002,
+      "name": "SlippageExceeded",
+      "msg": "Slippage tolerance exceeded"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidEpochState",
+      "msg": "Invalid epoch state - cannot determine tax rates"
+    },
+    {
+      "code": 6004,
+      "name": "InsufficientInput",
+      "msg": "Insufficient input amount for swap"
+    },
+    {
+      "code": 6005,
+      "name": "OutputBelowMinimum",
+      "msg": "Output amount below minimum"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidSwapAuthority",
+      "msg": "Invalid swap authority PDA"
+    },
+    {
+      "code": 6007,
+      "name": "WsolProgramMismatch",
+      "msg": "Token program mismatch - expected SPL Token for WSOL"
+    },
+    {
+      "code": 6008,
+      "name": "Token2022ProgramMismatch",
+      "msg": "Token program mismatch - expected Token-2022 for CRIME/FRAUD/PROFIT"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidTokenOwner",
+      "msg": "Invalid token account owner"
+    },
+    {
+      "code": 6010,
+      "name": "UnauthorizedCarnageCall",
+      "msg": "Carnage-only instruction called by non-Carnage authority"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidStakingEscrow",
+      "msg": "Staking escrow PDA mismatch"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidCarnageVault",
+      "msg": "Carnage vault PDA mismatch"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidTreasury",
+      "msg": "Treasury address mismatch"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidAmmProgram",
+      "msg": "AMM program address mismatch"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidStakingProgram",
+      "msg": "Staking program address mismatch"
+    },
+    {
+      "code": 6016,
+      "name": "InsufficientOutput",
+      "msg": "Tax exceeds gross output -- sell amount too small"
+    },
+    {
+      "code": 6017,
+      "name": "MinimumOutputFloorViolation",
+      "msg": "Minimum output below protocol floor (50% of expected)"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidPoolOwner",
+      "msg": "Pool account is not owned by AMM program"
+    },
+    {
+      "code": 6019,
+      "name": "EpochPauseActive",
+      "msg": "Trading paused until the post-transition pause window ends"
+    },
+    {
+      "code": 6020,
+      "name": "TradingPauseActive",
+      "msg": "Trading is paused by the protocol"
+    },
+    {
+      "code": 6021,
+      "name": "NonWsolQuotePool",
+      "msg": "Pool is not a WSOL-quote pool (mint_a must be WSOL)"
+    },
+    {
+      "code": 6022,
+      "name": "NotAFactionPool",
+      "msg": "Pool has no single faction side (CRIME/FRAUD)"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidArbConfig",
+      "msg": "Invalid ArbConfig account"
+    },
+    {
+      "code": 6024,
+      "name": "UnauthorizedArbWallet",
+      "msg": "Signer is not an authorized ArbConfig wallet"
+    },
+    {
+      "code": 6025,
+      "name": "InvalidSweepDestination",
+      "msg": "Sweep destination owner is not allowlisted in ArbConfig"
+    },
+    {
+      "code": 6026,
+      "name": "AmountExceedsSweepBalance",
+      "msg": "Withdrawal amount exceeds the sweep balance"
+    },
+    {
+      "code": 6027,
+      "name": "ZeroDistribution",
+      "msg": "Swept distribution amount must be greater than zero"
+    },
+    {
+      "code": 6028,
+      "name": "FactionWitnessMismatch",
+      "msg": "Faction witness does not match the authenticated pool"
+    },
+    {
+      "code": 6029,
+      "name": "PoolMintMismatch",
+      "msg": "Supplied mint account does not match the authenticated pool"
+    },
+    {
+      "code": 6030,
+      "name": "UnsupportedTransferFee",
+      "msg": "Current or scheduled Token-2022 transfer fees are unsupported"
+    }
+  ],
+  "types": [
+    {
+      "name": "ArbSwapExecuted",
+      "docs": [
+        "Emitted after a tax-free swap by an authorized ArbConfig wallet."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_crime",
+            "type": "bool"
+          },
+          {
+            "name": "direction",
+            "type": "u8"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "realized_out",
+            "type": "u64"
+          },
+          {
+            "name": "min_out",
+            "type": "u64"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExemptSwap",
+      "docs": [
+        "Emitted after every tax-exempt Carnage swap operation.",
+        "",
+        "Carnage swaps bypass tax calculation entirely. This event enables",
+        "off-chain monitoring of Carnage rebalancing activity that was previously",
+        "invisible (only AMM's SwapEvent was emitted).",
+        "",
+        "Source: Phase 37 audit finding -- swap_exempt had no event emission"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Carnage authority PDA that initiated the swap"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pool",
+            "docs": [
+              "AMM pool used for the swap"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_a",
+            "docs": [
+              "Amount swapped (SOL for buy, token for sell)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "direction",
+            "docs": [
+              "Swap direction: 0 = buy (AtoB), 1 = sell (BtoA)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "slot",
+            "docs": [
+              "Slot when swap occurred"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolType",
+      "docs": [
+        "Pool type identifier for events.",
+        "",
+        "Identifies which AMM pool was used in a swap operation."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "SolCrime"
+          },
+          {
+            "name": "SolFraud"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SplSwapExecuted",
+      "docs": [
+        "Emitted after a taxed generic SPL-quote swap."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool",
+            "type": "pubkey"
+          },
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_crime",
+            "type": "bool"
+          },
+          {
+            "name": "direction",
+            "type": "u8"
+          },
+          {
+            "name": "amount_in",
+            "type": "u64"
+          },
+          {
+            "name": "tax_amount",
+            "type": "u64"
+          },
+          {
+            "name": "amount_out",
+            "type": "u64"
+          },
+          {
+            "name": "tax_rate_bps",
+            "type": "u16"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwapDirection",
+      "docs": [
+        "Swap direction for events."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Buy"
+          },
+          {
+            "name": "Sell"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SweepWithdrawn",
+      "docs": [
+        "Emitted after an authorized sweep-ATA withdrawal."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "quote_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "destination_owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_balance",
+            "type": "u64"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SweptDistributed",
+      "docs": [
+        "Emitted after swept SOL is distributed through the frozen 71/24/5 split."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "total",
+            "type": "u64"
+          },
+          {
+            "name": "staking_amount",
+            "type": "u64"
+          },
+          {
+            "name": "carnage_amount",
+            "type": "u64"
+          },
+          {
+            "name": "treasury_amount",
+            "type": "u64"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaxedSwap",
+      "docs": [
+        "Emitted after every taxed swap operation.",
+        "",
+        "Contains full breakdown of the swap including tax calculation and distribution.",
+        "Used by off-chain analytics and frontends."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "docs": [
+              "User who initiated the swap"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pool_type",
+            "docs": [
+              "Which pool was used"
+            ],
+            "type": {
+              "defined": {
+                "name": "PoolType"
+              }
+            }
+          },
+          {
+            "name": "direction",
+            "docs": [
+              "Buy or Sell direction"
+            ],
+            "type": {
+              "defined": {
+                "name": "SwapDirection"
+              }
+            }
+          },
+          {
+            "name": "input_amount",
+            "docs": [
+              "Amount user put in (SOL for buy, tokens for sell)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "output_amount",
+            "docs": [
+              "Amount user received (tokens for buy, SOL for sell)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "tax_amount",
+            "docs": [
+              "Total tax collected (in SOL lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "tax_rate_bps",
+            "docs": [
+              "Tax rate applied (in basis points)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "staking_portion",
+            "docs": [
+              "SOL sent to staking escrow (71%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "carnage_portion",
+            "docs": [
+              "SOL sent to carnage fund (24%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "treasury_portion",
+            "docs": [
+              "SOL sent to treasury (5%, remainder)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "epoch",
+            "docs": [
+              "Epoch number when swap occurred"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "slot",
+            "docs": [
+              "Slot when swap occurred"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

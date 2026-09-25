@@ -1,0 +1,4133 @@
+{
+  "address": "4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2",
+  "metadata": {
+    "name": "epoch_program",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Dr Fraudsworth Epoch Program - VRF-driven tax regime coordination"
+  },
+  "instructions": [
+    {
+      "name": "accept_arb_config_authority",
+      "docs": [
+        "Complete a two-step ArbConfig authority transfer.",
+        "",
+        "Only the nonzero pending key may accept. Its separation from every",
+        "current active role is re-checked at acceptance time, after which the",
+        "pending sentinel is cleared.",
+        "",
+        "Source: Centralized-Arb MVP Spec §14.6 entries 4, 5, and 6."
+      ],
+      "discriminator": [
+        219,
+        62,
+        144,
+        192,
+        123,
+        230,
+        167,
+        150
+      ],
+      "accounts": [
+        {
+          "name": "new_authority",
+          "docs": [
+            "Pending authority that must explicitly accept the transfer."
+          ],
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Global ArbConfig PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "activate_epoch_safety",
+      "docs": [
+        "Explicitly activate the reserved-byte safety carve on an existing,",
+        "quiescent EpochState. This deterministic migration is permissionless,",
+        "one-way, and required before any post-upgrade transition operation."
+      ],
+      "discriminator": [
+        45,
+        225,
+        137,
+        160,
+        30,
+        146,
+        169,
+        197
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Any signer may execute this deterministic liveness migration."
+          ],
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "clear_trading_pause",
+      "docs": [
+        "Clear the indefinite manual trading pause.",
+        "",
+        "Only the primary pause authority is admitted. Redundant authorized",
+        "calls succeed without emitting an event so rotate-and-clear batches are",
+        "race safe."
+      ],
+      "discriminator": [
+        5,
+        185,
+        51,
+        45,
+        80,
+        18,
+        240,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "Primary pause authority; no other role has clearing power."
+          ],
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Global ArbConfig PDA, read only."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global EpochState PDA whose flag is changed."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "consume_randomness",
+      "docs": [
+        "Consume revealed VRF randomness and update taxes.",
+        "",
+        "Called once ORAO's fulfilment nodes have written the randomness",
+        "(observed 1-3 s on devnet, ~36 s on mainnet). Verifies anti-reroll",
+        "protection, reads the VRF bytes, derives tax rates.",
+        "",
+        "This is the second and last of our two transactions:",
+        "1. TX 1: trigger_epoch_transition (requests randomness)",
+        "2. ORAO's fulfilment nodes land their own transaction; we send nothing",
+        "3. TX 2: consume_randomness (this instruction)",
+        "",
+        "# Accounts",
+        "- `caller`: Anyone",
+        "- `epoch_state`: Global epoch state (mutated)",
+        "- `randomness_account`: the SAME ORAO request PDA bound at trigger,",
+        "re-verified by stored key AND by seed re-derivation",
+        "",
+        "# Errors",
+        "- `NoVrfPending` if no VRF request is pending",
+        "- `RandomnessAccountMismatch` if account doesn't match bound account (anti-reroll)",
+        "- `RandomnessParseError` if randomness account data is invalid",
+        "- `RandomnessNotRevealed` if oracle hasn't revealed yet",
+        "- `InsufficientRandomness` if less than 6 bytes revealed"
+      ],
+      "discriminator": [
+        190,
+        217,
+        49,
+        162,
+        99,
+        26,
+        73,
+        234
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Caller (anyone can call after oracle reveals)."
+          ],
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global epoch state."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "randomness_account",
+          "docs": [
+            "ORAO randomness request account (MUST match pending_randomness_account).",
+            "handler -- by the stored pending key and by seed re-derivation."
+          ]
+        },
+        {
+          "name": "staking_authority",
+          "docs": [
+            "Staking authority PDA - Epoch Program signs CPIs to Staking."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_pool",
+          "docs": [
+            "Staking Program's pool state (mutable for update_cumulative)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "staking_program",
+          "docs": [
+            "Staking Program for update_cumulative CPI."
+          ],
+          "address": "12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH"
+        },
+        {
+          "name": "carnage_state",
+          "docs": [
+            "Canonical Carnage Fund state. This consequence account is mandatory:",
+            "callers cannot commit new taxes while omitting Carnage processing."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "execute_carnage",
+      "docs": [
+        "Execute pending Carnage (fallback).",
+        "",
+        "Called permissionlessly when atomic Carnage execution failed.",
+        "Must be called within 100 slots of the failure (carnage_deadline_slot).",
+        "",
+        "This instruction performs the same execution as atomic Carnage:",
+        "1. If holdings exist and action = Burn: burn tokens, then buy target",
+        "2. If holdings exist and action = Sell: sell tokens to SOL, then buy target",
+        "3. If no holdings: just buy target token",
+        "",
+        "All swaps are tax-exempt (0% tax, 1% LP fee only).",
+        "",
+        "# Accounts",
+        "- `caller`: Anyone (permissionless)",
+        "- `epoch_state`: Global epoch state (has pending flags)",
+        "- `carnage_state`: Carnage Fund state (updated)",
+        "- `sol_vault`: Carnage SOL vault",
+        "",
+        "# Errors",
+        "- `NoCarnagePending` if no Carnage execution is pending",
+        "- `CarnageDeadlineExpired` if current_slot > carnage_deadline_slot",
+        "- `CarnageNotInitialized` if Carnage Fund not initialized",
+        "",
+        "Source: Carnage_Fund_Spec.md Section 13.3"
+      ],
+      "discriminator": [
+        26,
+        108,
+        25,
+        23,
+        27,
+        231,
+        145,
+        117
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Caller (anyone - permissionless)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global epoch state (has pending Carnage flags)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_state",
+          "docs": [
+            "Carnage Fund state (updated after execution)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_signer",
+          "docs": [
+            "Carnage signer PDA - signs Tax::swap_exempt CPI"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "sol_vault",
+          "docs": [
+            "Carnage SOL vault (holds native SOL as lamports)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_wsol",
+          "docs": [
+            "Carnage's WSOL token account (for swap_exempt user_token_a)",
+            "Box'd for stack savings (~165 bytes -> 8 bytes)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_vault",
+          "docs": [
+            "Carnage CRIME vault (Token-2022 account)",
+            "Box'd for stack savings (~165 bytes -> 8 bytes)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_vault",
+          "docs": [
+            "Carnage FRAUD vault (Token-2022 account)",
+            "Box'd for stack savings (~165 bytes -> 8 bytes)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_pool",
+          "docs": [
+            "CRIME/SOL AMM pool"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_pool_vault_a",
+          "docs": [
+            "CRIME/SOL pool's SOL vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_pool_vault_b",
+          "docs": [
+            "CRIME/SOL pool's token vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_pool",
+          "docs": [
+            "FRAUD/SOL AMM pool"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_pool_vault_a",
+          "docs": [
+            "FRAUD/SOL pool's SOL vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_pool_vault_b",
+          "docs": [
+            "FRAUD/SOL pool's token vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "mint_a",
+          "docs": [
+            "WSOL mint (CPI passthrough, shared by both pools)"
+          ]
+        },
+        {
+          "name": "crime_mint",
+          "docs": [
+            "CRIME token mint (mut: Token-2022 burn decrements supply)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_mint",
+          "docs": [
+            "FRAUD token mint (mut: Token-2022 burn decrements supply)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "tax_program",
+          "docs": [
+            "Tax Program (for swap_exempt CPI)"
+          ],
+          "address": "43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj"
+        },
+        {
+          "name": "amm_program",
+          "docs": [
+            "AMM Program (passed to Tax for swap)"
+          ],
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "Tax Program's swap_authority PDA (signs AMM CPI within Tax::swap_exempt)"
+          ]
+        },
+        {
+          "name": "token_program_a",
+          "docs": [
+            "SPL Token program (for WSOL)"
+          ]
+        },
+        {
+          "name": "token_program_b",
+          "docs": [
+            "Token-2022 program (for CRIME/FRAUD)"
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program"
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "generation",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "execute_carnage_atomic",
+      "docs": [
+        "Execute Carnage atomically (primary path).",
+        "",
+        "Called immediately after consume_randomness when Carnage is triggered.",
+        "Typically bundled in the same transaction for MEV protection.",
+        "",
+        "This instruction executes the full Carnage flow:",
+        "1. If holdings exist and action = Burn: burn tokens, then buy target",
+        "2. If holdings exist and action = Sell: sell tokens to SOL via Tax::swap_exempt, then buy target",
+        "3. If no holdings: just buy target token via Tax::swap_exempt",
+        "",
+        "All swaps are tax-exempt (0% tax, 1% LP fee only) via Tax::swap_exempt.",
+        "Swap amount is capped adaptively from the live SOL reserve and tax-pair friction.",
+        "",
+        "CRITICAL CPI DEPTH: This path reaches Solana's 4-level limit:",
+        "execute_carnage_atomic -> Tax::swap_exempt -> AMM::swap_sol_pool",
+        "-> Token-2022::transfer_checked -> Transfer Hook::execute",
+        "",
+        "# Accounts",
+        "- `caller`: Anyone (permissionless when carnage_pending = true)",
+        "- `epoch_state`: Global epoch state (has pending Carnage flags)",
+        "- `carnage_state`: Carnage Fund state (updated with holdings/stats)",
+        "- `carnage_signer`: PDA that signs Tax::swap_exempt calls",
+        "- `sol_vault`: Carnage SOL vault (native lamports)",
+        "- `carnage_wsol`: Carnage WSOL account for swap operations",
+        "- `crime_vault`: Carnage CRIME vault (Token-2022)",
+        "- `fraud_vault`: Carnage FRAUD vault (Token-2022)",
+        "- `target_pool`: AMM pool for target token",
+        "- `pool_vault_a/b`: Pool vaults",
+        "- `mint_a/b`: Token mints",
+        "- `tax_program`: Tax Program for swap_exempt CPI",
+        "- `amm_program`: AMM Program (passed through to Tax)",
+        "- `token_program_a/b`: Token programs",
+        "- `system_program`: System program",
+        "",
+        "# Errors",
+        "- `NoCarnagePending` if carnage_pending = false",
+        "- `CarnageNotInitialized` if Carnage Fund not initialized",
+        "- `InvalidCarnageTargetPool` if target pool doesn't match pending target",
+        "- `Overflow` if statistics overflow",
+        "",
+        "Source: Carnage_Fund_Spec.md Sections 8-10, 13.2"
+      ],
+      "discriminator": [
+        237,
+        52,
+        41,
+        40,
+        215,
+        9,
+        198,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Caller (anyone - permissionless execution)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global epoch state (has pending Carnage flags)",
+            "NOTE: EpochState already has carnage_pending, carnage_action, carnage_target,",
+            "carnage_deadline_slot fields from Phase 23 - we READ these existing fields."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_state",
+          "docs": [
+            "Carnage Fund state"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_signer",
+          "docs": [
+            "Carnage signer PDA - signs Tax::swap_exempt CPI"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  105,
+                  103,
+                  110,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "sol_vault",
+          "docs": [
+            "Carnage SOL vault (holds native SOL as lamports)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_wsol",
+          "docs": [
+            "Carnage's WSOL token account (for swap_exempt user_token_a)",
+            "This receives wrapped SOL before swap and unwraps after",
+            "Box'd for stack savings (~165 bytes -> 8 bytes)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_vault",
+          "docs": [
+            "Carnage CRIME vault (Token-2022 account)",
+            "Box'd for stack savings (~165 bytes -> 8 bytes)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_vault",
+          "docs": [
+            "Carnage FRAUD vault (Token-2022 account)",
+            "Box'd for stack savings (~165 bytes -> 8 bytes)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_pool",
+          "docs": [
+            "CRIME/SOL AMM pool"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_pool_vault_a",
+          "docs": [
+            "CRIME/SOL pool's SOL vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "crime_pool_vault_b",
+          "docs": [
+            "CRIME/SOL pool's token vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_pool",
+          "docs": [
+            "FRAUD/SOL AMM pool"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_pool_vault_a",
+          "docs": [
+            "FRAUD/SOL pool's SOL vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_pool_vault_b",
+          "docs": [
+            "FRAUD/SOL pool's token vault"
+          ],
+          "writable": true
+        },
+        {
+          "name": "mint_a",
+          "docs": [
+            "WSOL mint (CPI passthrough, shared by both pools)"
+          ]
+        },
+        {
+          "name": "crime_mint",
+          "docs": [
+            "CRIME token mint (mut: Token-2022 burn decrements supply)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fraud_mint",
+          "docs": [
+            "FRAUD token mint (mut: Token-2022 burn decrements supply)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "tax_program",
+          "docs": [
+            "Tax Program (for swap_exempt CPI)"
+          ],
+          "address": "43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj"
+        },
+        {
+          "name": "amm_program",
+          "docs": [
+            "AMM Program (passed to Tax for swap)"
+          ],
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "Tax Program's swap_authority PDA (signs AMM CPI within Tax::swap_exempt)"
+          ]
+        },
+        {
+          "name": "token_program_a",
+          "docs": [
+            "SPL Token program (for WSOL)"
+          ]
+        },
+        {
+          "name": "token_program_b",
+          "docs": [
+            "Token-2022 program (for CRIME/FRAUD)"
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program"
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "generation",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "expire_carnage",
+      "docs": [
+        "Expire pending Carnage after deadline.",
+        "",
+        "Called permissionlessly after the 100-slot deadline has passed.",
+        "Clears the pending Carnage state. SOL is retained in vault for",
+        "the next Carnage trigger.",
+        "",
+        "This instruction does NOT execute Carnage - it simply clears the",
+        "pending state so the protocol can continue. The accumulated SOL",
+        "remains in the Carnage vault and will be used on the next trigger.",
+        "",
+        "# Accounts",
+        "- `caller`: Anyone (permissionless)",
+        "- `epoch_state`: Global epoch state (pending flags cleared)",
+        "- `carnage_state`: Carnage Fund state (read for vault balance)",
+        "- `sol_vault`: Carnage SOL vault (read for balance in event)",
+        "",
+        "# Errors",
+        "- `NoCarnagePending` if no Carnage execution is pending",
+        "- `CarnageDeadlineNotExpired` if current_slot <= carnage_deadline_slot",
+        "",
+        "Source: Carnage_Fund_Spec.md Section 13.4"
+      ],
+      "discriminator": [
+        49,
+        220,
+        141,
+        236,
+        248,
+        225,
+        67,
+        51
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Caller (anyone - permissionless)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global epoch state (has pending Carnage flags)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_state",
+          "docs": [
+            "Carnage Fund state (read for sol_vault balance in event)"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "sol_vault",
+          "docs": [
+            "Carnage SOL vault (read for balance in event)"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "generation",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "initialize_arb_config",
+      "docs": [
+        "Initialize the global ArbConfig PDA.",
+        "",
+        "The payer must be the deployed Epoch program's verified ProgramData",
+        "upgrade authority and becomes `arb_config.authority`; authority is",
+        "deliberately not accepted as an argument. Anchor's `init` constraint",
+        "rejects re-initialization when the PDA already exists.",
+        "",
+        "Source: Centralized-Arb MVP Spec §3.1, §14.1 ruling 13, and §14.6",
+        "entries 1, 5, and 6."
+      ],
+      "discriminator": [
+        142,
+        196,
+        18,
+        44,
+        41,
+        14,
+        140,
+        134
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Payer for account creation rent and verified initial authority."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Global ArbConfig PDA. Anchor `init` makes re-initialization impossible."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program",
+          "docs": [
+            "The Epoch program — used to look up its ProgramData address."
+          ],
+          "address": "4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2"
+        },
+        {
+          "name": "program_data",
+          "docs": [
+            "ProgramData account — upgrade_authority must match payer."
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program for account creation."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "wallet_a",
+          "type": "pubkey"
+        },
+        {
+          "name": "wallet_b",
+          "type": "pubkey"
+        },
+        {
+          "name": "pause_slots",
+          "type": "u64"
+        },
+        {
+          "name": "epoch_length_slots",
+          "type": "u64"
+        },
+        {
+          "name": "pause_authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "pause_tripwire",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "initialize_carnage_fund",
+      "docs": [
+        "Initialize the Carnage Fund.",
+        "",
+        "Called once at protocol deployment. Creates the Carnage Fund state",
+        "account and token vaults for CRIME and FRAUD.",
+        "",
+        "The SOL vault is a SystemAccount PDA that will hold native lamports",
+        "from protocol fees. The token vaults are Token-2022 accounts that",
+        "will hold purchased tokens before burning.",
+        "",
+        "# Accounts",
+        "- `authority`: Deployer (pays for account creation)",
+        "- `carnage_state`: Carnage Fund state PDA (created)",
+        "- `sol_vault`: SOL vault PDA (SystemAccount)",
+        "- `crime_vault`: CRIME token vault PDA (Token-2022, created)",
+        "- `fraud_vault`: FRAUD token vault PDA (Token-2022, created)",
+        "- `crime_mint`: CRIME token mint",
+        "- `fraud_mint`: FRAUD token mint",
+        "- `token_program`: Token-2022 program",
+        "- `system_program`: System program",
+        "",
+        "# Errors",
+        "- `CarnageAlreadyInitialized` if called more than once"
+      ],
+      "discriminator": [
+        1,
+        57,
+        249,
+        77,
+        171,
+        11,
+        177,
+        163
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Deployer (one-time, pays for account creation)"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "carnage_state",
+          "docs": [
+            "Carnage Fund state account (PDA)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  102,
+                  117,
+                  110,
+                  100
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "sol_vault",
+          "docs": [
+            "SOL vault PDA (SystemAccount holding native SOL).",
+            "Note: This is just a PDA address that will receive lamports.",
+            "We don't create an account here - SOL is stored as lamports in the PDA."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "crime_vault",
+          "docs": [
+            "CRIME token vault PDA (Token-2022 account)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  99,
+                  114,
+                  105,
+                  109,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fraud_vault",
+          "docs": [
+            "FRAUD token vault PDA (Token-2022 account)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  102,
+                  114,
+                  97,
+                  117,
+                  100,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "crime_mint",
+          "docs": [
+            "CRIME token mint (Token-2022)"
+          ]
+        },
+        {
+          "name": "fraud_mint",
+          "docs": [
+            "FRAUD token mint (Token-2022)"
+          ]
+        },
+        {
+          "name": "token_program",
+          "docs": [
+            "Token-2022 program (for CRIME and FRAUD vaults)"
+          ]
+        },
+        {
+          "name": "program",
+          "docs": [
+            "The Epoch program — used to look up its ProgramData address."
+          ],
+          "address": "4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2"
+        },
+        {
+          "name": "program_data",
+          "docs": [
+            "ProgramData account — upgrade_authority must match authority."
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program"
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_epoch_state",
+      "docs": [
+        "Initialize the global epoch state.",
+        "",
+        "Called once at protocol deployment. Sets up genesis configuration",
+        "with CRIME as the cheap side, 3% low tax, 14% high tax.",
+        "",
+        "# Arguments",
+        "None - all values are hardcoded for genesis.",
+        "",
+        "# Errors",
+        "- `AlreadyInitialized` if called more than once"
+      ],
+      "discriminator": [
+        139,
+        122,
+        53,
+        254,
+        85,
+        205,
+        138,
+        245
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Payer for account creation rent.",
+            "Typically the protocol deployer."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global epoch state PDA.",
+            "seeds = [\"epoch_state\"]"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program",
+          "docs": [
+            "The Epoch program — used to look up its ProgramData address."
+          ],
+          "address": "4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2"
+        },
+        {
+          "name": "program_data",
+          "docs": [
+            "ProgramData account — upgrade_authority must match payer."
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program for account creation."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "retry_epoch_vrf",
+      "docs": [
+        "Retry VRF after timeout.",
+        "",
+        "Called permissionlessly if the oracle fails to fulfil within 300 slots",
+        "(~2 min). Requests a fresh ORAO account at attempt+1, which derives a",
+        "different PDA. Nothing needs bundling.",
+        "",
+        "This is a recovery mechanism to prevent protocol deadlock. If the original",
+        "oracle fails to reveal, anyone can call this instruction with a new",
+        "randomness account to restart the VRF process.",
+        "",
+        "# Accounts",
+        "- `payer`: Anyone",
+        "- `epoch_state`: Global epoch state (mutated)",
+        "- `randomness_account`: the fresh ORAO request PDA for attempt+1",
+        "- `network_state`, `treasury`, `vrf_program`, `system_program`: ORAO CPI",
+        "",
+        "# Errors",
+        "- `NoVrfPending` if no VRF request is pending",
+        "- `VrfTimeoutNotElapsed` if 300 slots haven't passed since original request",
+        "- `RandomnessAccountMismatch` if the passed account is not the derived PDA",
+        "- `RandomnessReplacementUnchanged` if it equals the pending account"
+      ],
+      "discriminator": [
+        224,
+        172,
+        84,
+        142,
+        193,
+        90,
+        137,
+        142
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Payer for the retry. Must be wallet A/B until public recovery opens.",
+            "Writable because the ORAO CPI debits it for the request fee and the",
+            "request PDA's rent."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global epoch state."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Canonical keeper roster. Wallet A/B get the first recovery window;",
+            "public callers are admitted only after that bounded preference expires."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "network_state",
+          "docs": [
+            "ORAO's network-configuration PDA. See `TriggerEpochTransition`."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  111,
+                  45,
+                  118,
+                  114,
+                  102,
+                  45,
+                  110,
+                  101,
+                  116,
+                  119,
+                  111,
+                  114,
+                  107,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  117,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                7,
+                71,
+                177,
+                26,
+                250,
+                145,
+                180,
+                209,
+                249,
+                34,
+                242,
+                123,
+                14,
+                186,
+                193,
+                218,
+                178,
+                59,
+                33,
+                41,
+                164,
+                190,
+                243,
+                79,
+                50,
+                164,
+                123,
+                88,
+                245,
+                206,
+                252,
+                120
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "ORAO's fee treasury.",
+            "`network_state.config.treasury == treasury.key()`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "randomness_account",
+          "docs": [
+            "Fresh ORAO randomness request PDA for (current_epoch, vrf_attempts + 1).",
+            "own seed by re-derivation before the CPI."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vrf_program",
+          "docs": [
+            "The ORAO VRF program we CPI into."
+          ],
+          "address": "VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y"
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "Required by the ORAO CPI, which creates an account. This instruction did",
+            "not previously declare it."
+          ],
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "set_trading_pause",
+      "docs": [
+        "Set the indefinite manual trading pause.",
+        "",
+        "The primary pause authority and the set-only tripwire are admitted.",
+        "Redundant authorized calls succeed without emitting an event."
+      ],
+      "discriminator": [
+        47,
+        96,
+        4,
+        63,
+        224,
+        104,
+        81,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "Primary pause authority or set-only tripwire."
+          ],
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Global ArbConfig PDA, read only."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global EpochState PDA whose flag is changed."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "terminal_vrf_fallback",
+      "docs": [
+        "Resolve a VRF generation after its final attempt times out or its",
+        "absolute lifetime is reached. Keeps the last confirmed taxes, finalizes",
+        "Staking, schedules no Carnage, and clears pending state permissionlessly."
+      ],
+      "discriminator": [
+        162,
+        116,
+        114,
+        83,
+        115,
+        232,
+        63,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Anyone may restore liveness after an objective on-chain limit."
+          ],
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "staking_authority",
+          "docs": [
+            "Epoch Program PDA authorized by Staking."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_pool",
+          "docs": [
+            "Staking singleton updated by the canonical Staking program."
+          ],
+          "writable": true
+        },
+        {
+          "name": "staking_program",
+          "docs": [
+            "Canonical Staking program."
+          ],
+          "address": "12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "trigger_epoch_transition",
+      "docs": [
+        "Trigger an epoch transition.",
+        "",
+        "Called by a configured arb wallet when the epoch boundary is reached,",
+        "or permissionlessly once the grace window opens. Issues an ORAO",
+        "`request_v2` CPI and binds the resulting request PDA for anti-reroll",
+        "protection. Nothing needs bundling: ORAO inits the request itself.",
+        "",
+        "This is the first of TWO of our transactions:",
+        "1. TX 1: trigger_epoch_transition (requests randomness)",
+        "2. ORAO's fulfilment nodes land their own transaction; we send nothing",
+        "3. TX 2: consume_randomness",
+        "",
+        "# Accounts",
+        "- `payer`: Arb wallet before grace; anyone after grace; receives the bounty",
+        "- `epoch_state`: Global epoch state (mutated)",
+        "- `arb_config`: Live epoch length, pause length, and trigger wallets",
+        "- `carnage_sol_vault`: Carnage SOL vault PDA (funds bounty via invoke_signed)",
+        "- `randomness_account`: the ORAO request PDA this epoch/attempt derives to",
+        "- `network_state`, `treasury`, `vrf_program`: ORAO CPI accounts",
+        "",
+        "# Errors",
+        "- `EpochBoundaryNotReached` if current slot hasn't passed next epoch boundary",
+        "- `UnauthorizedTrigger` if a stranger calls before the grace boundary",
+        "- `VrfAlreadyPending` if a VRF request is already in progress",
+        "- `RandomnessAccountMismatch` if the passed account is not the derived PDA"
+      ],
+      "discriminator": [
+        54,
+        133,
+        174,
+        185,
+        145,
+        124,
+        78,
+        58
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Payer who triggers the transition. Receives the trigger bounty.",
+            "Must be wallet_a/wallet_b until the inclusive grace boundary opens."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "Global epoch state singleton.",
+            "Validated via seeds and bump."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "ArbConfig -- live-read epoch length and wallet gate.",
+            "Hard-required after upgrade; the upgrade and initialization share one ceremony batch."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "carnage_sol_vault",
+          "docs": [
+            "Carnage SOL vault PDA that funds the trigger bounty.",
+            "The vault accrues 24% of all trade tax and has ample balance for bounties.",
+            "Uses invoke_signed with PDA seeds to authorize the transfer."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "network_state",
+          "docs": [
+            "ORAO's network-configuration PDA. Names the fulfilment-authority set and",
+            "carries the live `request_fee` and `treasury`; ORAO validates the passed",
+            "treasury against it, so no fee or treasury value is compiled in here."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  111,
+                  45,
+                  118,
+                  114,
+                  102,
+                  45,
+                  110,
+                  101,
+                  116,
+                  119,
+                  111,
+                  114,
+                  107,
+                  45,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103,
+                  117,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                7,
+                71,
+                177,
+                26,
+                250,
+                145,
+                180,
+                209,
+                249,
+                34,
+                242,
+                123,
+                14,
+                186,
+                193,
+                218,
+                178,
+                59,
+                33,
+                41,
+                164,
+                190,
+                243,
+                79,
+                50,
+                164,
+                123,
+                88,
+                245,
+                206,
+                252,
+                120
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "ORAO's fee treasury.",
+            "`network_state.config.treasury == treasury.key()`; a hardcoded value",
+            "would silently break every request the day ORAO rotates it."
+          ],
+          "writable": true
+        },
+        {
+          "name": "randomness_account",
+          "docs": [
+            "ORAO randomness request PDA for this (epoch, attempt).",
+            "own seed by re-derivation before the CPI, so a caller cannot substitute",
+            "an account it controls."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vrf_program",
+          "docs": [
+            "The ORAO VRF program we CPI into."
+          ],
+          "address": "VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_arb_config",
+      "docs": [
+        "Update ArbConfig one-shot fields or initiate, overwrite, or cancel a",
+        "pending two-step authority transfer.",
+        "",
+        "The current authority remains active until the pending signer accepts.",
+        "A default `new_authority` cancels only the pending transfer and never",
+        "writes the active authority.",
+        "",
+        "Source: Centralized-Arb MVP Spec §3.1 and §14.6 entries 4, 5, and 6."
+      ],
+      "discriminator": [
+        207,
+        149,
+        212,
+        145,
+        156,
+        223,
+        35,
+        71
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Current ArbConfig authority. Pending authorities have no powers yet."
+          ],
+          "signer": true
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "Global ArbConfig PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdateArbConfigArgs"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ArbConfig",
+      "discriminator": [
+        135,
+        81,
+        18,
+        100,
+        131,
+        57,
+        107,
+        219
+      ]
+    },
+    {
+      "name": "CarnageFundState",
+      "discriminator": [
+        154,
+        96,
+        78,
+        113,
+        241,
+        43,
+        56,
+        17
+      ]
+    },
+    {
+      "name": "EpochState",
+      "discriminator": [
+        191,
+        63,
+        139,
+        237,
+        144,
+        12,
+        223,
+        210
+      ]
+    },
+    {
+      "name": "NetworkState",
+      "discriminator": [
+        212,
+        237,
+        148,
+        56,
+        97,
+        245,
+        51,
+        169
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ArbConfigUpdated",
+      "discriminator": [
+        215,
+        224,
+        252,
+        230,
+        236,
+        78,
+        232,
+        143
+      ]
+    },
+    {
+      "name": "CarnageExecuted",
+      "discriminator": [
+        7,
+        173,
+        133,
+        145,
+        15,
+        100,
+        42,
+        136
+      ]
+    },
+    {
+      "name": "CarnageExpired",
+      "discriminator": [
+        43,
+        0,
+        226,
+        140,
+        190,
+        109,
+        64,
+        239
+      ]
+    },
+    {
+      "name": "CarnageFailed",
+      "discriminator": [
+        149,
+        121,
+        32,
+        157,
+        25,
+        171,
+        166,
+        38
+      ]
+    },
+    {
+      "name": "CarnageFundInitialized",
+      "discriminator": [
+        246,
+        35,
+        148,
+        145,
+        52,
+        20,
+        180,
+        42
+      ]
+    },
+    {
+      "name": "CarnageNotTriggered",
+      "discriminator": [
+        17,
+        67,
+        78,
+        119,
+        74,
+        91,
+        100,
+        218
+      ]
+    },
+    {
+      "name": "CarnagePending",
+      "discriminator": [
+        212,
+        146,
+        227,
+        79,
+        190,
+        121,
+        70,
+        155
+      ]
+    },
+    {
+      "name": "EpochSafetyActivated",
+      "discriminator": [
+        163,
+        246,
+        189,
+        6,
+        132,
+        181,
+        78,
+        136
+      ]
+    },
+    {
+      "name": "EpochStateInitialized",
+      "discriminator": [
+        128,
+        4,
+        123,
+        70,
+        242,
+        219,
+        119,
+        231
+      ]
+    },
+    {
+      "name": "EpochTransitionTriggered",
+      "discriminator": [
+        44,
+        154,
+        185,
+        124,
+        135,
+        190,
+        133,
+        125
+      ]
+    },
+    {
+      "name": "TaxesUpdated",
+      "discriminator": [
+        173,
+        137,
+        202,
+        71,
+        9,
+        218,
+        206,
+        193
+      ]
+    },
+    {
+      "name": "TradingPauseChanged",
+      "discriminator": [
+        96,
+        164,
+        17,
+        28,
+        21,
+        255,
+        240,
+        130
+      ]
+    },
+    {
+      "name": "VrfRetryRequested",
+      "discriminator": [
+        145,
+        69,
+        234,
+        127,
+        127,
+        230,
+        121,
+        161
+      ]
+    },
+    {
+      "name": "VrfTerminalFallback",
+      "discriminator": [
+        165,
+        131,
+        78,
+        78,
+        222,
+        43,
+        89,
+        80
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "AlreadyInitialized",
+      "msg": "Epoch state already initialized"
+    },
+    {
+      "code": 6001,
+      "name": "NotInitialized",
+      "msg": "Epoch state not initialized"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidEpochState",
+      "msg": "Invalid epoch state"
+    },
+    {
+      "code": 6003,
+      "name": "EpochBoundaryNotReached",
+      "msg": "Epoch boundary has not been reached yet"
+    },
+    {
+      "code": 6004,
+      "name": "VrfAlreadyPending",
+      "msg": "VRF request is already pending"
+    },
+    {
+      "code": 6005,
+      "name": "NoVrfPending",
+      "msg": "No VRF request is pending"
+    },
+    {
+      "code": 6006,
+      "name": "RandomnessParseError",
+      "msg": "Randomness account data could not be parsed"
+    },
+    {
+      "code": 6007,
+      "name": "RandomnessExpired",
+      "msg": "Randomness account is stale (seed_slot too old)"
+    },
+    {
+      "code": 6008,
+      "name": "RandomnessAlreadyRevealed",
+      "msg": "Randomness has already been revealed (cannot commit)"
+    },
+    {
+      "code": 6009,
+      "name": "RandomnessAccountMismatch",
+      "msg": "Randomness account does not match committed account"
+    },
+    {
+      "code": 6010,
+      "name": "RandomnessNotRevealed",
+      "msg": "Randomness has not been revealed by oracle yet"
+    },
+    {
+      "code": 6011,
+      "name": "InsufficientRandomness",
+      "msg": "Insufficient randomness bytes (need 8)"
+    },
+    {
+      "code": 6012,
+      "name": "VrfTimeoutNotElapsed",
+      "msg": "VRF timeout has not elapsed (wait 300 slots)"
+    },
+    {
+      "code": 6013,
+      "name": "NoCarnagePending",
+      "msg": "No Carnage execution is pending"
+    },
+    {
+      "code": 6014,
+      "name": "CarnageDeadlineExpired",
+      "msg": "Carnage execution deadline has expired"
+    },
+    {
+      "code": 6015,
+      "name": "CarnageDeadlineNotExpired",
+      "msg": "Carnage deadline has not expired yet"
+    },
+    {
+      "code": 6016,
+      "name": "CarnageLockActive",
+      "msg": "Carnage lock window active (atomic-only period)"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidCarnageTargetPool",
+      "msg": "Invalid Carnage target pool"
+    },
+    {
+      "code": 6018,
+      "name": "CarnageNotInitialized",
+      "msg": "Carnage fund not initialized"
+    },
+    {
+      "code": 6019,
+      "name": "CarnageAlreadyInitialized",
+      "msg": "Carnage fund already initialized"
+    },
+    {
+      "code": 6020,
+      "name": "InsufficientCarnageSol",
+      "msg": "Insufficient SOL in Carnage vault"
+    },
+    {
+      "code": 6021,
+      "name": "CarnageSwapFailed",
+      "msg": "Carnage swap execution failed"
+    },
+    {
+      "code": 6022,
+      "name": "CarnageBurnFailed",
+      "msg": "Carnage burn execution failed"
+    },
+    {
+      "code": 6023,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6024,
+      "name": "InsufficientTreasuryBalance",
+      "msg": "Insufficient SOL in treasury for bounty"
+    },
+    {
+      "code": 6025,
+      "name": "InvalidRandomnessOwner",
+      "msg": "Randomness account not owned by the ORAO VRF program"
+    },
+    {
+      "code": 6026,
+      "name": "InvalidCarnageWsolOwner",
+      "msg": "Carnage WSOL account not owned by CarnageSigner PDA"
+    },
+    {
+      "code": 6027,
+      "name": "InvalidStakingProgram",
+      "msg": "Staking program address mismatch"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidMint",
+      "msg": "Invalid mint account"
+    },
+    {
+      "code": 6029,
+      "name": "CarnageSlippageExceeded",
+      "msg": "Carnage swap slippage exceeded (below minimum output floor)"
+    },
+    {
+      "code": 6030,
+      "name": "InvalidTaxProgram",
+      "msg": "Tax program address mismatch"
+    },
+    {
+      "code": 6031,
+      "name": "InvalidAmmProgram",
+      "msg": "AMM program address mismatch"
+    },
+    {
+      "code": 6032,
+      "name": "InvalidCheapSide",
+      "msg": "Invalid cheap_side value -- expected 0 (CRIME) or 1 (FRAUD)"
+    },
+    {
+      "code": 6033,
+      "name": "EpochLengthOutOfBounds",
+      "msg": "Epoch length is outside the allowed range"
+    },
+    {
+      "code": 6034,
+      "name": "PauseSlotsExceedsMax",
+      "msg": "Pause slots exceed the allowed maximum"
+    },
+    {
+      "code": 6035,
+      "name": "PauseSlotsNotBelowEpochLength",
+      "msg": "Pause slots must be below the epoch length"
+    },
+    {
+      "code": 6036,
+      "name": "ZeroPubkeyForbidden",
+      "msg": "Zero pubkeys are forbidden for ArbConfig roles"
+    },
+    {
+      "code": 6037,
+      "name": "RoleOverlapForbidden",
+      "msg": "ArbConfig role overlap is forbidden"
+    },
+    {
+      "code": 6038,
+      "name": "UnauthorizedArbConfigAuthority",
+      "msg": "Unauthorized ArbConfig authority"
+    },
+    {
+      "code": 6039,
+      "name": "NoPendingAuthority",
+      "msg": "No ArbConfig authority transfer is pending"
+    },
+    {
+      "code": 6040,
+      "name": "UnauthorizedPendingAuthority",
+      "msg": "Unauthorized pending ArbConfig authority"
+    },
+    {
+      "code": 6041,
+      "name": "UnauthorizedTrigger",
+      "msg": "Unauthorized epoch transition trigger"
+    },
+    {
+      "code": 6042,
+      "name": "UnauthorizedPauseSet",
+      "msg": "Unauthorized trading pause setter"
+    },
+    {
+      "code": 6043,
+      "name": "UnauthorizedPauseClear",
+      "msg": "Unauthorized trading pause clearer"
+    },
+    {
+      "code": 6044,
+      "name": "RandomnessQueueMismatch",
+      "msg": "Randomness account belongs to an unapproved oracle queue"
+    },
+    {
+      "code": 6045,
+      "name": "SafetyActivationRequired",
+      "msg": "Epoch safety state must be activated before transitions"
+    },
+    {
+      "code": 6046,
+      "name": "SafetyAlreadyActivated",
+      "msg": "Epoch safety state is already activated"
+    },
+    {
+      "code": 6047,
+      "name": "SafetyActivationRequiresQuiescent",
+      "msg": "Epoch safety activation requires quiescent VRF and Carnage state"
+    },
+    {
+      "code": 6048,
+      "name": "RandomnessCommitmentMismatch",
+      "msg": "Randomness commitment does not match the derived request seed"
+    },
+    {
+      "code": 6049,
+      "name": "VrfAttemptLimitReached",
+      "msg": "VRF attempt limit reached"
+    },
+    {
+      "code": 6050,
+      "name": "VrfAbsoluteAgeLimitReached",
+      "msg": "VRF absolute pending-age limit reached"
+    },
+    {
+      "code": 6051,
+      "name": "VrfTerminalLimitNotReached",
+      "msg": "VRF terminal fallback limit has not been reached"
+    },
+    {
+      "code": 6052,
+      "name": "CarnageGenerationMismatch",
+      "msg": "Carnage generation does not match the pending action"
+    },
+    {
+      "code": 6053,
+      "name": "CarnagePendingBlocksTransition",
+      "msg": "Pending Carnage blocks a new epoch transition"
+    },
+    {
+      "code": 6054,
+      "name": "PreviousTransitionUnconfirmed",
+      "msg": "Previous epoch transition is not confirmed"
+    },
+    {
+      "code": 6055,
+      "name": "RandomnessReplacementUnchanged",
+      "msg": "VRF retry randomness account must differ from the pending account"
+    },
+    {
+      "code": 6056,
+      "name": "VrfTerminalTransitionRequired",
+      "msg": "VRF generation requires terminal fallback"
+    },
+    {
+      "code": 6057,
+      "name": "UnauthorizedVrfRetry",
+      "msg": "Unauthorized VRF retry before the public recovery window"
+    }
+  ],
+  "types": [
+    {
+      "name": "ArbConfig",
+      "docs": [
+        "Global arbitrage and epoch-timing configuration.",
+        "",
+        "Single PDA: seeds = `[b\"arb_config\"]`.",
+        "",
+        "Source: Centralized-Arb MVP Spec §3.1, §14.1, and §14.6."
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Squads authority. Initialized from the verified ProgramData upgrade",
+              "authority signer, never from an instruction argument."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pending_authority",
+            "docs": [
+              "Proposed successor for two-step authority transfer.",
+              "`Pubkey::default()` means no transfer is pending."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet_a",
+            "docs": [
+              "Primary protocol-owned arbitrage wallet."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet_b",
+            "docs": [
+              "Standby protocol-owned arbitrage wallet.",
+              "Equality with wallet_a is the sole allowed cross-role overlap."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_authority",
+            "docs": [
+              "Cold authority allowed to set and clear the manual trading pause."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_tripwire",
+            "docs": [
+              "Hot tripwire allowed to set, but never clear, the manual trading pause."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_slots",
+            "docs": [
+              "Post-transition exclusivity pause in slots. Zero is legal."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "epoch_length_slots",
+            "docs": [
+              "Live-read epoch length in slots."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "docs": [
+              "Reserved padding for future fixed-layout evolution."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ArbConfigUpdated",
+      "docs": [
+        "Emitted after ArbConfig initialization and every successful config change.",
+        "",
+        "Carries the complete post-change configuration so off-chain consumers never",
+        "need to reconstruct state from partial update events."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "pending_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet_a",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet_b",
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_tripwire",
+            "type": "pubkey"
+          },
+          {
+            "name": "pause_slots",
+            "type": "u64"
+          },
+          {
+            "name": "epoch_length_slots",
+            "type": "u64"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CarnageExecuted",
+      "docs": [
+        "Emitted when Carnage executes successfully.",
+        "",
+        "Contains full details of the buyback-and-burn (or sell) operation.",
+        "Source: Carnage_Fund_Spec.md Section 14"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "Epoch when Carnage executed"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "action",
+            "docs": [
+              "0=None, 1=Burn, 2=Sell (matches CarnageAction enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "target",
+            "docs": [
+              "0=CRIME, 1=FRAUD (matches Token enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "sol_spent",
+            "docs": [
+              "SOL spent on the swap (in lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "tokens_bought",
+            "docs": [
+              "Tokens bought from the pool"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "tokens_burned",
+            "docs": [
+              "Tokens burned (0 if action=Sell)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "sol_from_sale",
+            "docs": [
+              "SOL received from sale (0 if action=Burn)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "atomic",
+            "docs": [
+              "true if executed atomically in consume_randomness, false if via fallback"
+            ],
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CarnageExpired",
+      "docs": [
+        "Emitted when pending Carnage expires without execution.",
+        "",
+        "Indicates that the fallback window (300 slots) elapsed without",
+        "anyone calling execute_pending_carnage. SOL is retained for next time.",
+        "Source: Carnage_Fund_Spec.md Section 14"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "Epoch when Carnage was originally triggered"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "target",
+            "docs": [
+              "0=CRIME, 1=FRAUD (matches Token enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "action",
+            "docs": [
+              "0=None, 1=Burn, 2=Sell (matches CarnageAction enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "deadline_slot",
+            "docs": [
+              "Slot deadline that was missed"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "sol_retained",
+            "docs": [
+              "SOL that remains in vault for next trigger"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CarnageFailed",
+      "docs": [
+        "Emitted when Carnage execution fails and funds carry forward.",
+        "",
+        "Only emitted from expire_carnage when stale pending Carnage is cleared,",
+        "since failing transactions roll back entirely (no event emission).",
+        "Source: Phase 47 CONTEXT.md"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "Epoch when Carnage was triggered"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "action",
+            "docs": [
+              "0=None, 1=Burn, 2=Sell (matches CarnageAction enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "target",
+            "docs": [
+              "0=CRIME, 1=FRAUD (matches Token enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "attempted_amount",
+            "docs": [
+              "SOL that was attempted (lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "vault_balance",
+            "docs": [
+              "SOL remaining in vault (lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "slot",
+            "docs": [
+              "Slot when failure was detected"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "atomic",
+            "docs": [
+              "Whether the atomic path was attempted (always true for expire, distinguishes from future use)"
+            ],
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CarnageFundInitialized",
+      "docs": [
+        "Emitted when Carnage Fund is initialized.",
+        "",
+        "This event marks the initialization of the Carnage Fund vaults.",
+        "Source: Carnage_Fund_Spec.md Section 14"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sol_vault",
+            "docs": [
+              "PDA of the SOL vault"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "crime_vault",
+            "docs": [
+              "PDA of the CRIME token vault"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "fraud_vault",
+            "docs": [
+              "PDA of the FRAUD token vault"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "docs": [
+              "Unix timestamp of initialization"
+            ],
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CarnageFundState",
+      "docs": [
+        "Global Carnage Fund state account.",
+        "",
+        "Single PDA: seeds = [\"carnage_fund\"]",
+        "",
+        "This account tracks the Carnage Fund's holdings, vault addresses,",
+        "and lifetime statistics. The Carnage Fund accumulates SOL from protocol",
+        "fees and uses it for random buyback-and-burn operations.",
+        "",
+        "**Size calculation:**",
+        "- Discriminator: 8 bytes",
+        "- sol_vault: 32 bytes",
+        "- crime_vault: 32 bytes",
+        "- fraud_vault: 32 bytes",
+        "- held_token: 1 byte",
+        "- held_amount: 8 bytes",
+        "- last_trigger_epoch: 4 bytes",
+        "- total_sol_spent: 8 bytes",
+        "- total_crime_burned: 8 bytes",
+        "- total_fraud_burned: 8 bytes",
+        "- total_triggers: 4 bytes",
+        "- initialized: 1 byte",
+        "- bump: 1 byte",
+        "Total: 8 + 139 = 147 bytes",
+        "",
+        "Source: Carnage_Fund_Spec.md Section 4"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sol_vault",
+            "docs": [
+              "PDA of the SOL vault (SystemAccount holding native SOL).",
+              "Seeds = [\"carnage_sol_vault\"]"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "crime_vault",
+            "docs": [
+              "PDA of the CRIME token vault (Token-2022 account).",
+              "Seeds = [\"carnage_crime_vault\"]"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "fraud_vault",
+            "docs": [
+              "PDA of the FRAUD token vault (Token-2022 account).",
+              "Seeds = [\"carnage_fraud_vault\"]"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "held_token",
+            "docs": [
+              "Which token is currently held (0=None, 1=CRIME, 2=FRAUD).",
+              "Use u8 to avoid Borsh enum serialization complexity.",
+              "See HeldToken enum for type-safe operations."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "held_amount",
+            "docs": [
+              "Amount of held token (0 if held_token = None).",
+              "Represents tokens purchased during Carnage trigger,",
+              "waiting for next Carnage to burn or sell."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "last_trigger_epoch",
+            "docs": [
+              "Last epoch when Carnage triggered.",
+              "Used to track Carnage frequency for analytics."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "total_sol_spent",
+            "docs": [
+              "Lifetime statistics: total SOL spent on buys (in lamports).",
+              "Monotonically increasing."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_crime_burned",
+            "docs": [
+              "Lifetime statistics: total CRIME burned.",
+              "Monotonically increasing."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_fraud_burned",
+            "docs": [
+              "Lifetime statistics: total FRAUD burned.",
+              "Monotonically increasing."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_triggers",
+            "docs": [
+              "Lifetime statistics: total triggers executed.",
+              "Monotonically increasing counter."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "initialized",
+            "docs": [
+              "Initialization flag.",
+              "Set to true in initialize_carnage_fund, prevents re-initialization."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CarnageNotTriggered",
+      "docs": [
+        "Emitted when Carnage trigger check occurs but doesn't trigger.",
+        "",
+        "Indicates that VRF byte 5 did not meet the trigger threshold.",
+        "Source: Carnage_Fund_Spec.md Section 14"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "Epoch when trigger was checked"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "vrf_byte",
+            "docs": [
+              "VRF byte 5 value that didn't meet threshold (<11 required)"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CarnagePending",
+      "docs": [
+        "Emitted when atomic Carnage fails and enters pending state.",
+        "",
+        "Indicates that Carnage was triggered but could not execute atomically",
+        "(e.g., due to compute limits). Fallback execution is now available.",
+        "Source: Carnage_Fund_Spec.md Section 14"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "Epoch when Carnage was triggered"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "target",
+            "docs": [
+              "0=CRIME, 1=FRAUD (matches Token enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "action",
+            "docs": [
+              "0=None, 1=Burn, 2=Sell (matches CarnageAction enum)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "deadline_slot",
+            "docs": [
+              "Slot deadline for fallback execution"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochSafetyActivated",
+      "docs": [
+        "Emitted by the one-way, quiescent migration that activates the bounded",
+        "VRF/Carnage state-machine fields carved from reserved bytes."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "activated_by",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochState",
+      "docs": [
+        "Global epoch state account.",
+        "",
+        "Single PDA: seeds = [\"epoch_state\"]",
+        "",
+        "This account is the coordination hub for all protocol dynamics:",
+        "- Tax rates (read by Tax Program during swaps)",
+        "- VRF state (commit-reveal randomness lifecycle)",
+        "- Carnage state (pending execution tracking)",
+        "",
+        "**Size calculation:**",
+        "- Discriminator: 8 bytes",
+        "- genesis_slot: 8 bytes",
+        "- current_epoch: 4 bytes",
+        "- epoch_start_slot: 8 bytes",
+        "- cheap_side: 1 byte",
+        "- low_tax_bps: 2 bytes",
+        "- high_tax_bps: 2 bytes",
+        "- crime_buy_tax_bps: 2 bytes",
+        "- crime_sell_tax_bps: 2 bytes",
+        "- fraud_buy_tax_bps: 2 bytes",
+        "- fraud_sell_tax_bps: 2 bytes",
+        "- vrf_request_slot: 8 bytes",
+        "- vrf_pending: 1 byte",
+        "- taxes_confirmed: 1 byte",
+        "- pending_randomness_account: 32 bytes",
+        "- carnage_pending: 1 byte",
+        "- carnage_target: 1 byte",
+        "- carnage_action: 1 byte",
+        "- carnage_deadline_slot: 8 bytes",
+        "- carnage_lock_slot: 8 bytes",
+        "- last_carnage_epoch: 4 bytes",
+        "- pause_end_slot: 8 bytes",
+        "- trading_paused: 1 byte",
+        "- safety_version: 1 byte",
+        "- vrf_transition_start_slot: 8 bytes",
+        "- pending_seed_slot: 8 bytes",
+        "- vrf_attempts: 1 byte",
+        "- carnage_generation: 4 bytes",
+        "- last_degraded_epoch: 4 bytes",
+        "- last_vrf_fallback_reason: 1 byte",
+        "- reserved: 28 bytes (future schema evolution padding)",
+        "- initialized: 1 byte",
+        "- bump: 1 byte",
+        "Total: 8 + 164 = 172 bytes",
+        "",
+        "Source: Epoch_State_Machine_Spec.md Section 4.1, Phase 47 CONTEXT.md"
+      ],
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "genesis_slot",
+            "docs": [
+              "Slot when protocol was initialized (genesis).",
+              "Retained as immutable display/reference data after the incremental-clock cutover."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "current_epoch",
+            "docs": [
+              "Current epoch number (0-indexed).",
+              "Increments each time trigger_epoch_transition succeeds."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "epoch_start_slot",
+            "docs": [
+              "Slot when the current epoch started.",
+              "Re-anchored to clock.slot after every successful transition."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "cheap_side",
+            "docs": [
+              "Current cheap side: 0 = CRIME, 1 = FRAUD.",
+              "Cheap side gets low tax on buy, high tax on sell."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "low_tax_bps",
+            "docs": [
+              "Low tax rate in basis points (100-400, i.e., 1-4%).",
+              "Applied to cheap side buys and expensive side sells."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "high_tax_bps",
+            "docs": [
+              "High tax rate in basis points (1100-1400, i.e., 11-14%).",
+              "Applied to cheap side sells and expensive side buys."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "crime_buy_tax_bps",
+            "docs": [
+              "CRIME buy tax rate in basis points.",
+              "If CRIME cheap: low_tax_bps. If FRAUD cheap: high_tax_bps."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "crime_sell_tax_bps",
+            "docs": [
+              "CRIME sell tax rate in basis points.",
+              "If CRIME cheap: high_tax_bps. If FRAUD cheap: low_tax_bps."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "fraud_buy_tax_bps",
+            "docs": [
+              "FRAUD buy tax rate in basis points.",
+              "If FRAUD cheap: low_tax_bps. If CRIME cheap: high_tax_bps."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "fraud_sell_tax_bps",
+            "docs": [
+              "FRAUD sell tax rate in basis points.",
+              "If FRAUD cheap: high_tax_bps. If CRIME cheap: low_tax_bps."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "vrf_request_slot",
+            "docs": [
+              "Slot when VRF randomness was committed (0 = none pending).",
+              "Used for timeout detection: if current_slot > vrf_request_slot + VRF_TIMEOUT_SLOTS, retry allowed."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "vrf_pending",
+            "docs": [
+              "Whether a VRF request is pending (waiting for consume_randomness)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "taxes_confirmed",
+            "docs": [
+              "Whether taxes have been confirmed for the current epoch.",
+              "False between trigger_epoch_transition and consume_randomness."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "pending_randomness_account",
+            "docs": [
+              "Pubkey of the ORAO randomness REQUEST PDA bound when the request was",
+              "issued, i.e. randomness_account_address(ORAO, epoch_vrf_seed(..)).",
+              "Anti-reroll protection: consume_randomness must use this exact account."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "carnage_pending",
+            "docs": [
+              "Whether Carnage execution is pending (atomic failed, fallback active)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "carnage_target",
+            "docs": [
+              "Target token for Carnage buy: 0 = CRIME, 1 = FRAUD.",
+              "Only valid when carnage_pending = true."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "carnage_action",
+            "docs": [
+              "Carnage action type: 0 = None, 1 = Burn, 2 = Sell.",
+              "Only valid when carnage_pending = true."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "carnage_deadline_slot",
+            "docs": [
+              "Slot deadline for fallback Carnage execution.",
+              "If current_slot > carnage_deadline_slot, Carnage expires."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "carnage_lock_slot",
+            "docs": [
+              "Slot until which only the atomic Carnage path can execute.",
+              "After lock expires, fallback execute_carnage becomes callable.",
+              "Set to current_slot + CARNAGE_LOCK_SLOTS when Carnage triggers."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "last_carnage_epoch",
+            "docs": [
+              "Last epoch when Carnage was triggered.",
+              "Used to track Carnage frequency."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "pause_end_slot",
+            "docs": [
+              "Absolute slot at which the post-transition trading pause ends (exclusive).",
+              "Written at every epoch transition as clock.slot + arb_config.pause_slots (spec §14.2 correction).",
+              "Pre-upgrade bytes here are zero => 0 => \"no pause\" until the first post-upgrade transition."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "trading_paused",
+            "docs": [
+              "Manual protocol trading-pause flag (spec §14.3 ruling 3, §14.6).",
+              "Set by pause_authority OR pause_tripwire; cleared by pause_authority ONLY.",
+              "Pre-upgrade bytes are zero => false. Flag only — who/when live in events."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "safety_version",
+            "docs": [
+              "Reserved-byte schema version. Zero is the pre-remediation layout and is",
+              "deliberately rejected until `activate_epoch_safety` runs while the",
+              "singleton has no pending VRF or Carnage work."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "vrf_transition_start_slot",
+            "docs": [
+              "Immutable start slot for the current VRF generation. Unlike",
+              "`vrf_request_slot`, this is never changed by a retry."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "pending_seed_slot",
+            "docs": [
+              "The slot at which the ORAO randomness request was issued (A-05).",
+              "",
+              "SEMANTIC CHANGE, NOT A LAYOUT CHANGE. This field previously held the",
+              "oracle's own commitment seed-slot snapshot, and consume asserted",
+              "equality against it. Under ORAO the equivalent bind is re-deriving the",
+              "request PDA from the seed, so this now records the request slot for",
+              "diagnostics and the timeout arithmetic. The name, type, size and",
+              "offset are all unchanged: EpochState's layout is frozen (D-06) and the",
+              "Tax program, the keeper decoder and the app decoder read it at a fixed",
+              "offset with no window to re-point them."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "vrf_attempts",
+            "docs": [
+              "Number of VRF commitments made for this transition, including the",
+              "initial trigger commitment."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "carnage_generation",
+            "docs": [
+              "Epoch/generation to which pending Carnage belongs. Zero when no Carnage",
+              "is pending; callers must pass this generation explicitly."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "last_degraded_epoch",
+            "docs": [
+              "Most recent epoch resolved via deterministic degraded fallback. The",
+              "companion reason is zero when no degraded fallback has ever occurred."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "last_vrf_fallback_reason",
+            "docs": [
+              "Zero = none, 1 = final attempt timed out, 2 = absolute age reached."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "docs": [
+              "Remaining reserved padding (64 total, with 36 bytes carved so far)."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                28
+              ]
+            }
+          },
+          {
+            "name": "initialized",
+            "docs": [
+              "Whether the epoch state has been initialized.",
+              "Set to true in initialize_epoch_state, prevents re-initialization."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochStateInitialized",
+      "docs": [
+        "Emitted when epoch state is initialized at protocol deployment.",
+        "",
+        "This event marks the genesis of the epoch system.",
+        "Source: Epoch_State_Machine_Spec.md Section 12"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "genesis_slot",
+            "docs": [
+              "Slot when protocol was initialized"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "initial_cheap_side",
+            "docs": [
+              "Initial cheap side: 0 = CRIME, 1 = FRAUD"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "docs": [
+              "Unix timestamp of initialization"
+            ],
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochTransitionTriggered",
+      "docs": [
+        "Emitted when an epoch transition is triggered.",
+        "",
+        "This event indicates that an ORAO randomness request has been issued.",
+        "Source: Epoch_State_Machine_Spec.md Section 12"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "The new epoch number"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "triggered_by",
+            "docs": [
+              "Public key of the account that triggered the transition"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "slot",
+            "docs": [
+              "Slot when transition was triggered"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bounty_paid",
+            "docs": [
+              "Bounty paid to triggerer in lamports"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "randomness_queue",
+            "docs": [
+              "The oracle trust root for this request: ORAO's network_state PDA.",
+              "The FIELD NAME is deliberately unchanged -- renaming it would change",
+              "the IDL event shape and break consumers for no benefit."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "attempt",
+            "docs": [
+              "Commitment number within this generation (always 1 at trigger)."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NetworkConfiguration",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "request_fee",
+            "type": "u64"
+          },
+          {
+            "name": "fulfillment_authorities",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "token_fee_config",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "OraoTokenFeeConfig"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "NetworkState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "config",
+            "type": {
+              "defined": {
+                "name": "NetworkConfiguration"
+              }
+            }
+          },
+          {
+            "name": "num_received",
+            "docs": [
+              "Total number of received requests."
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OraoTokenFeeConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "docs": [
+              "ORAO token mint address."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "docs": [
+              "ORAO token treasury account."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "fee",
+            "docs": [
+              "Fee in ORAO SPL token smallest units."
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaxesUpdated",
+      "docs": [
+        "Emitted when taxes are updated after VRF randomness is consumed.",
+        "",
+        "Contains the new tax configuration derived from VRF bytes.",
+        "Source: Epoch_State_Machine_Spec.md Section 12"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "Current epoch number"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "cheap_side",
+            "docs": [
+              "New cheap side: 0 = CRIME, 1 = FRAUD"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "low_tax_bps",
+            "docs": [
+              "Low tax rate in basis points (100-400)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "high_tax_bps",
+            "docs": [
+              "High tax rate in basis points (1100-1400)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "flipped",
+            "docs": [
+              "Whether the cheap side flipped from previous epoch"
+            ],
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradingPauseChanged",
+      "docs": [
+        "Emitted only when the manual trading-pause flag actually changes."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "setter",
+            "type": "pubkey"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateArbConfigArgs",
+      "docs": [
+        "Optional ArbConfig changes applied by the current authority.",
+        "",
+        "Every supplied wallet, pause key, or timing value takes effect immediately.",
+        "`new_authority` only changes `pending_authority`; the active authority is",
+        "changed exclusively by `accept_arb_config_authority`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "new_authority",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "new_wallet_a",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "new_wallet_b",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "new_pause_slots",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "new_epoch_length_slots",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "new_pause_authority",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "new_pause_tripwire",
+            "type": {
+              "option": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "VrfRetryRequested",
+      "docs": [
+        "Emitted when a VRF retry is requested after timeout.",
+        "",
+        "Indicates the original VRF request timed out (300 slots) and a fresh",
+        "randomness account was committed.",
+        "Source: Epoch_State_Machine_Spec.md Section 12"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "docs": [
+              "Current epoch number"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "original_request_slot",
+            "docs": [
+              "Slot of the original (failed) VRF request"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "retry_slot",
+            "docs": [
+              "Slot of this retry request"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "requested_by",
+            "docs": [
+              "Public key of the account that requested the retry"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "transition_start_slot",
+            "docs": [
+              "Immutable slot at which this transition first became pending."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "attempt",
+            "docs": [
+              "Cumulative commitment number after this retry."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "randomness_queue",
+            "docs": [
+              "The oracle trust root for the replacement request: ORAO's",
+              "network_state PDA. Field name deliberately unchanged (IDL stability)."
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VrfTerminalFallback",
+      "docs": [
+        "Emitted when an objectively failed VRF generation is resolved without new",
+        "randomness. The prior confirmed tax tuple is retained, Staking is finalized,",
+        "no Carnage action is scheduled, and the pending commitment is cleared."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "reason",
+            "docs": [
+              "1 = final configured attempt timed out; 2 = absolute pending age reached."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "attempts",
+            "type": "u8"
+          },
+          {
+            "name": "transition_start_slot",
+            "type": "u64"
+          },
+          {
+            "name": "resolved_slot",
+            "type": "u64"
+          },
+          {
+            "name": "cheap_side",
+            "type": "u8"
+          },
+          {
+            "name": "crime_buy_tax_bps",
+            "type": "u16"
+          },
+          {
+            "name": "crime_sell_tax_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fraud_buy_tax_bps",
+            "type": "u16"
+          },
+          {
+            "name": "fraud_sell_tax_bps",
+            "type": "u16"
+          },
+          {
+            "name": "pause_end_slot",
+            "type": "u64"
+          },
+          {
+            "name": "staking_finalized",
+            "type": "bool"
+          }
+        ]
+      }
+    }
+  ]
+}

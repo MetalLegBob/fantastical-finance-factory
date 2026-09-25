@@ -1,0 +1,702 @@
+{
+  "address": "5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ",
+  "metadata": {
+    "name": "conversion_vault",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Dr Fraudsworth Conversion Vault - Fixed-rate 100:1 token conversions"
+  },
+  "instructions": [
+    {
+      "name": "convert",
+      "docs": [
+        "Convert tokens at fixed 100:1 rate.",
+        "Supports 4 paths: CRIME->PROFIT, FRAUD->PROFIT, PROFIT->CRIME, PROFIT->FRAUD."
+      ],
+      "discriminator": [
+        122,
+        80,
+        212,
+        208,
+        92,
+        200,
+        34,
+        161
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "docs": [
+            "User performing the conversion."
+          ],
+          "signer": true
+        },
+        {
+          "name": "vault_config",
+          "docs": [
+            "VaultConfig PDA — needed for vault token account authority."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_input_account",
+          "docs": [
+            "User's input token account (source — user sends tokens here)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_output_account",
+          "docs": [
+            "User's output token account (destination — user receives tokens here)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "input_mint",
+          "docs": [
+            "Input mint (CRIME, FRAUD, or PROFIT)."
+          ]
+        },
+        {
+          "name": "output_mint",
+          "docs": [
+            "Output mint (CRIME, FRAUD, or PROFIT)."
+          ]
+        },
+        {
+          "name": "vault_input",
+          "docs": [
+            "Vault's input token account (receives user's input tokens).",
+            "Validated: correct mint + correct PDA authority."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_output",
+          "docs": [
+            "Vault's output token account (sends converted tokens to user).",
+            "Validated: correct mint + correct PDA authority."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "convert_v2",
+      "docs": [
+        "Convert tokens at fixed 100:1 rate with on-chain balance reading and slippage protection.",
+        "",
+        "Three modes controlled by `amount_in` and `pre_balance`:",
+        "- `amount_in > 0`: Exact mode — convert exactly `amount_in` tokens.",
+        "- `amount_in == 0, pre_balance == 0`: Convert-all — convert entire balance.",
+        "- `amount_in == 0, pre_balance > 0`: Delta mode — convert only the tokens",
+        "deposited since `pre_balance` (e.g. by a preceding AMM swap in an atomic",
+        "multi-hop route). User's pre-existing holdings are untouched."
+      ],
+      "discriminator": [
+        2,
+        169,
+        12,
+        141,
+        64,
+        38,
+        20,
+        20
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "docs": [
+            "User performing the conversion."
+          ],
+          "signer": true
+        },
+        {
+          "name": "vault_config",
+          "docs": [
+            "VaultConfig PDA — needed for vault token account authority."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_input_account",
+          "docs": [
+            "User's input token account (source — user sends tokens here)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_output_account",
+          "docs": [
+            "User's output token account (destination — user receives tokens here)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "input_mint",
+          "docs": [
+            "Input mint (CRIME, FRAUD, or PROFIT)."
+          ]
+        },
+        {
+          "name": "output_mint",
+          "docs": [
+            "Output mint (CRIME, FRAUD, or PROFIT)."
+          ]
+        },
+        {
+          "name": "vault_input",
+          "docs": [
+            "Vault's input token account (receives user's input tokens).",
+            "Validated: correct mint + correct PDA authority."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault_output",
+          "docs": [
+            "Vault's output token account (sends converted tokens to user).",
+            "Validated: correct mint + correct PDA authority."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_output",
+          "type": "u64"
+        },
+        {
+          "name": "pre_balance",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "extract_profit",
+      "docs": [
+        "Phase 148 — one-shot extraction of 4.5M PROFIT to the Squads vault PDA's PROFIT ATA.",
+        "Spec: `.docs/v1.9/extract-profit-spec.md`. Callable ONLY by the Squads vault PDA;",
+        "cannot be re-run (MigrationConfig PDA enforces one-shot via Anchor `init`)."
+      ],
+      "discriminator": [
+        211,
+        129,
+        26,
+        30,
+        26,
+        134,
+        179,
+        86
+      ],
+      "accounts": [
+        {
+          "name": "vault_config",
+          "docs": [
+            "Singleton vault state PDA (signer for the transfer CPI via vault_config bump)."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_profit",
+          "docs": [
+            "Conversion Vault's PROFIT token account — extraction SOURCE.",
+            "TRIPLE CONSTRAINT (defense-in-depth, spec I5):",
+            "- `token::mint = profit_mint` rejects CRIME/FRAUD vault substitution at framework layer",
+            "- `token::authority = vault_config` pins ownership to the vault PDA",
+            "- `address = ...` removes any remaining substitution ambiguity (cluster literal pinned)",
+            "Phase 149 OBS-01 fix: `address` now sourced from cfg-gated `constants::VAULT_PROFIT_ATA_PUBKEY`",
+            "so one arm resolves correctly for BOTH devnet and mainnet builds."
+          ],
+          "writable": true,
+          "address": "DBMaWgfUW8WBb8VVvqDFkrMpEkPkCPTcLpSpyzHAiwp3"
+        },
+        {
+          "name": "destination_ata",
+          "docs": [
+            "Squads vault PDA's PROFIT ATA — extraction DESTINATION.",
+            "`token::mint = profit_mint` + `token::authority = SQUADS_VAULT_PUBKEY` + `address = DESTINATION_ATA_PUBKEY`",
+            "Phase 149 OBS-01 fix: literals migrated to cfg-gated consts; one arm covers devnet + mainnet."
+          ],
+          "writable": true,
+          "address": "2xWqYxbZb1a5khGq3Lx4EVm33zreFZKX4pfZZk6RLPeq"
+        },
+        {
+          "name": "migration_config",
+          "docs": [
+            "One-shot sentinel. `init` fails with AccountAlreadyInUse on second invocation.",
+            "Spec I7 — MUST be `init`, NEVER `init_if_needed` (replay defense)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  103,
+                  114,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Must be the Squads vault PDA — the only entity authorized to extract (spec I6).",
+            "Phase 149 OBS-01 fix: pinned via cfg-gated `SQUADS_VAULT_PUBKEY` const",
+            "(devnet: `HM6PJAr...`, mainnet: `GDY4Qu3...`). Localnet: runtime override."
+          ],
+          "writable": true,
+          "signer": true,
+          "address": "GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN"
+        },
+        {
+          "name": "profit_mint",
+          "docs": [
+            "PROFIT mint (pinned to address for explicit defense-in-depth).",
+            "Phase 149 OBS-01 + OBS-10 fix: spec I2 narrative said \"mainnet AND devnet share",
+            "the same PROFIT mint pubkey\" — UNTRUE in reality. Devnet has its own PROFIT mint",
+            "(`Eaipvk74...`), distinct from mainnet vanity (`pRoFiTj36...`). cfg-gated const",
+            "now correctly resolves per cluster."
+          ],
+          "address": "pRoFiTj36haRD5sG2Neqib9KoSrtdYMGrM7SEkZetfR"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "transfer_hook_program"
+        },
+        {
+          "name": "extra_account_meta_list"
+        },
+        {
+          "name": "whitelist_source"
+        },
+        {
+          "name": "whitelist_dest"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "One-shot vault initialization. Creates VaultConfig PDA and 3 token accounts.",
+        "Any signer can call — no authority stored."
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "The program's upgrade authority. Must sign to prove deployer identity."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "vault_config",
+          "docs": [
+            "VaultConfig singleton PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_crime",
+          "docs": [
+            "Vault's CRIME token account — PDA-derived, authority = vault_config."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  99,
+                  114,
+                  105,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_fraud",
+          "docs": [
+            "Vault's FRAUD token account — PDA-derived, authority = vault_config."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  102,
+                  114,
+                  97,
+                  117,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_profit",
+          "docs": [
+            "Vault's PROFIT token account — PDA-derived, authority = vault_config."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116,
+                  95,
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "vault_config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "crime_mint",
+          "docs": [
+            "CRIME mint (validated via constraint; bypassed in localnet)."
+          ]
+        },
+        {
+          "name": "fraud_mint",
+          "docs": [
+            "FRAUD mint (validated via constraint; bypassed in localnet)."
+          ]
+        },
+        {
+          "name": "profit_mint",
+          "docs": [
+            "PROFIT mint (validated via constraint; bypassed in localnet)."
+          ]
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "program",
+          "docs": [
+            "The Conversion Vault program — used to look up its ProgramData address."
+          ],
+          "address": "5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ"
+        },
+        {
+          "name": "program_data",
+          "docs": [
+            "ProgramData account — upgrade_authority must match payer."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MigrationConfig",
+      "discriminator": [
+        221,
+        35,
+        251,
+        172,
+        252,
+        90,
+        70,
+        161
+      ]
+    },
+    {
+      "name": "VaultConfig",
+      "discriminator": [
+        99,
+        86,
+        43,
+        216,
+        184,
+        102,
+        119,
+        77
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "ZeroAmount",
+      "msg": "Input amount must be greater than zero"
+    },
+    {
+      "code": 6001,
+      "name": "OutputTooSmall",
+      "msg": "Output amount rounds to zero — input too small for conversion"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidMintPair",
+      "msg": "Invalid mint pair — must be CRIME<->PROFIT or FRAUD<->PROFIT"
+    },
+    {
+      "code": 6003,
+      "name": "SameMint",
+      "msg": "Input and output mints must be different"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidTokenProgram",
+      "msg": "Invalid token program — must be Token-2022"
+    },
+    {
+      "code": 6005,
+      "name": "MathOverflow",
+      "msg": "Overflow in conversion calculation"
+    },
+    {
+      "code": 6006,
+      "name": "SlippageExceeded",
+      "msg": "Output below minimum — slippage protection"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidOwner",
+      "msg": "Input account not owned by signer"
+    },
+    {
+      "code": 6008,
+      "name": "DeltaUnderflow",
+      "msg": "Pre-balance exceeds current balance — stale or incorrect snapshot"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidMint",
+      "msg": "Account passed is not the PROFIT mint"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidDestination",
+      "msg": "Destination ATA does not match the canonical Squads vault PROFIT ATA"
+    },
+    {
+      "code": 6011,
+      "name": "MigrationAlreadyExecuted",
+      "msg": "Migration already executed — MigrationConfig PDA exists"
+    }
+  ],
+  "types": [
+    {
+      "name": "MigrationConfig",
+      "docs": [
+        "One-shot sentinel PDA whose mere existence blocks replay of `extract_profit`.",
+        "Created by Anchor `init` in `extract_profit`'s Accounts struct. Zero data fields:",
+        "only the 8-byte Anchor discriminator. Second invocation of `extract_profit` fails",
+        "at the System Program `create_account` CPI with `AccountAlreadyInUse` — deterministic",
+        "Solana runtime, not application logic. See spec § Section 7.",
+        "",
+        "Phase 152 revert binary REMOVES the `extract_profit` IX selector; the PDA continues",
+        "to exist as inert storage. See spec § Section 9 + invariant I14."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "VaultConfig",
+      "docs": [
+        "Global vault configuration PDA.",
+        "Seeds: [\"vault_config\"]",
+        "",
+        "Minimal state — all conversion parameters are hardcoded constants.",
+        "No authority stored. No conversion rate stored.",
+        "Upgrade authority managed by Squads multisig on the program itself.",
+        "",
+        "In localnet mode, mint addresses are stored in state (not hardcoded)",
+        "so integration tests with random mints can exercise the vault."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed for deterministic re-derivation."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

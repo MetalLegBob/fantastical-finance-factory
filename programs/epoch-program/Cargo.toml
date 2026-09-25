@@ -1,0 +1,61 @@
+[package]
+name = "epoch-program"
+version = "0.1.0"
+description = "Dr Fraudsworth Epoch Program - VRF-driven tax regime coordination"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+anchor-spl = { version = "0.32.1", features = ["token", "token_2022", "associated_token"] }
+solana-security-txt = "1.1.1"
+spl-token-2022 = "8.0.1"
+# ORAO VRF v2 (Phase 179.1). `default-features = false` is MANDATORY: the
+# crate's default feature is `sdk`, which pulls anchor-client, tokio,
+# solana-rpc-client and ed25519-dalek into the BPF build and fails it.
+# The crate documents that `cpi` requires `sdk` disabled.
+orao-solana-vrf = { version = "=0.7.0", default-features = false, features = ["cpi"] }
+# SHA-256 for `epoch_vrf_seed`. Anchor 0.32's `anchor_lang::solana_program` is a
+# curated re-export set that does NOT include a `hash` module, and this program
+# has never hashed on-chain before (every existing sha256 call site in
+# programs/ is inside a #[cfg(test)] block using the sha2 dev-dependency).
+# This crate is ALREADY in the non-dev build graph via anchor-lang -> solana-pubkey
+# and anchor-spl -> spl-associated-token-account -> solana-program, so declaring
+# it adds no new crate to the compiled graph -- it only makes one nameable.
+# Chosen over a direct `solana-program` dep (far larger surface) and over
+# `sha2` (pure-Rust, thousands of CU per hash and more ELF bytes; both matter
+# here because trigger CU under the ORAO CPI and the new ELF size are live
+# unknowns U-3 and U-2). On BPF this calls the sol_sha256 syscall.
+solana-sha256-hasher = "2.3"
+
+[dev-dependencies]
+proptest = "1.9"
+litesvm = "0.9.1"
+solana-sdk = "2.2"
+solana-program = "2.2"
+solana-address = "2.0"
+solana-keypair = "~3.1"
+solana-signer = "~3.0"
+solana-message = "~3.0"
+solana-transaction = { version = "~3.0", features = ["verify"] }
+solana-account = "3.3"
+solana-instruction = "~3.1"
+sha2 = "0.10"
+arb-test-support = { path = "../../crates/arb-test-support" }
+
+[features]
+default = []
+devnet = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+# U-1 RESOLVED (179.1-01 Task 8): orao-solana-vrf/idl-build is NOT required.
+# The IDL emitted by anchor's own mechanism is byte-identical (59,839 bytes)
+# with and without it, and the three orao_solana_vrf::state::network_state
+# types resolve either way -- anchor-lang/idl-build unifies onto the shared
+# anchor proc-macro crates, so ORAO's types get their IdlBuild impls anyway.
+# Not carried, because least-change is binding.
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]

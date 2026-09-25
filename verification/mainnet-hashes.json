@@ -1,0 +1,61 @@
+{
+  "cluster": "mainnet-beta",
+  "hashKind": "solana-verify executable hash (sha256 of the program ELF, trailing zero padding stripped)",
+  "buildTool": "solana-verify 0.4.11 (solana-verify build --base-image <buildImage> --library-name <library>)",
+  "upgradeAuthority": "GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN",
+  "programs": [
+    {
+      "name": "AMM",
+      "library": "amm",
+      "programId": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR",
+      "executableHash": "57a7502842a1121860d868fab2738a32ddd8132b9ea86ed3cefa761d1984641a",
+      "buildImage": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259"
+    },
+    {
+      "name": "Transfer Hook",
+      "library": "transfer_hook",
+      "programId": "CiQPQrmQh6BPhb9k7dFnsEs5gKPgdrvNKFc5xie5xVGd",
+      "executableHash": "f8ebebe5d2ee7e9b624eab9775a7d5291e4d1b93c55ef89e4212ae1682218e62",
+      "buildImage": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259"
+    },
+    {
+      "name": "Tax",
+      "library": "tax_program",
+      "programId": "43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj",
+      "executableHash": "c12235eb308c435f75e387d2b153db37343c492ffaf62f77dcef1445a885ac29",
+      "buildImage": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259"
+    },
+    {
+      "name": "Epoch",
+      "library": "epoch_program",
+      "programId": "4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2",
+      "executableHash": "ac5522b87927cb3610e2e647bbd35afb75a8a0df9015644a54e478562f81a363",
+      "buildImage": "solanafoundation/solana-verifiable-build@sha256:1e6f3097794495fa968c9e07d4da6adcdabf28efc6ddb0314c2e9e72b57a7a34"
+    },
+    {
+      "name": "Staking",
+      "library": "staking",
+      "programId": "12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH",
+      "executableHash": "66fea0a119f89e306b4d50667db3ee34bec5b79ce6441027852e6254240c2eb7",
+      "buildImage": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259"
+    },
+    {
+      "name": "Conversion Vault",
+      "library": "conversion_vault",
+      "programId": "5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ",
+      "executableHash": "c4c92ba2af701fde91ed377e9e39d689760ac115bcecb3a3a534cc9a4764a0fd",
+      "buildImage": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259"
+    },
+    {
+      "name": "Vote",
+      "library": "vote_program",
+      "programId": "8xeFnfKe6CrzS2MZoP9qVhRCAR1KX8isDpLNuurP9Lsd",
+      "executableHash": "8eeb3933cc5e1168abd78c77d2bcff10fb58fc4ba82ed49733f903213bd567a7",
+      "buildImage": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259"
+    }
+  ],
+  "buildImages": {
+    "solana-3.0.13": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259",
+    "solana-2.3.0": "solanafoundation/solana-verifiable-build@sha256:1e6f3097794495fa968c9e07d4da6adcdabf28efc6ddb0314c2e9e72b57a7a34"
+  }
+}

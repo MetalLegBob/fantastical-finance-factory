@@ -1,0 +1,36 @@
+[package]
+name = "staking"
+version = "0.1.0"
+description = "Dr Fraudsworth Staking Program - PROFIT staking for SOL yield"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+anchor-spl = { version = "0.32.1", features = ["token_2022"] }
+solana-security-txt = "1.1.1"
+
+[dev-dependencies]
+sha2 = "0.10"
+proptest = "1.9"
+litesvm = "0.9.1"
+solana-sdk = "2.2"
+solana-keypair = "~3.1"
+solana-signer = "~3.0"
+solana-message = "~3.0"
+solana-transaction = { version = "~3.0", features = ["verify"] }
+solana-instruction = "~3.1"
+spl-token-2022 = "8.0.1"
+arb-test-support = { path = "../../crates/arb-test-support" }
+
+[features]
+default = []
+devnet = []
+test = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
