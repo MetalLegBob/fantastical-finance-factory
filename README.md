@@ -12,17 +12,17 @@ read the code and rebuild it to the exact bytes running on-chain (see
 
 ## The protocol in brief
 
-Three Token-2022 tokens: **CRIME**, **FRAUD** and **PROFIT**.
+Three Token-2022 tokens: **ZIG**, **ZAG** and **MOTION**.
 
-- CRIME and FRAUD trade against SOL in protocol-owned constant-product pools. Every buy and sell pays a tax.
+- ZIG and ZAG trade against a variety of assets in protocol-owned constant-product pools. Every buy and sell pays a tax.
 - Every ~30 minutes (4,500 slots) a VRF result re-rolls the taxes. With 75% probability the "cheap side"
-  flips between CRIME and FRAUD. The cheap side's buy tax is 1–4% and the expensive side's buy tax is
+  flips between ZIG and ZAG. The cheap side's buy tax is 1–4% and the expensive side's buy tax is
   11–14%, rolled independently for each token.
-- Tax revenue is split **71% to PROFIT stakers (paid in SOL) / 24% to the Carnage fund / 5% to the treasury**.
+- Tax revenue is split **71% to MOTION stakers (paid in SOL) / 24% to the Carnage fund / 5% to the treasury**.
 - **Carnage**: each epoch has an ~4.3% (11/256) chance to fire. The Carnage fund then burns or sells its
   previously held tokens and market-buys a VRF-chosen token with its SOL.
-- The Conversion Vault converts CRIME or FRAUD to PROFIT (and back) at a fixed **100:1**, with no fee.
-- A transfer hook restricts CRIME, FRAUD and PROFIT transfers to whitelisted protocol accounts, so all
+- The Conversion Vault converts ZIG or ZAG to MOTION (and back) at a fixed **100:1**, with no fee.
+- A transfer hook restricts ZIG, ZAG and MOTION transfers to whitelisted protocol accounts, so all
   trading goes through the taxed pools.
 
 ## Programs
@@ -32,18 +32,18 @@ Three Token-2022 tokens: **CRIME**, **FRAUD** and **PROFIT**.
 | **AMM** | [`5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR`](https://solscan.io/account/5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR) | Constant-product swap pools (Uniswap V2-style design) with Token-2022 transfer-hook support. Swaps are only reachable through the Tax program. |
 | **Tax** | [`43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj`](https://solscan.io/account/43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj) | Swap router. Reads the current epoch's tax rates, routes swaps into the AMM, applies a 50% minimum-output floor and splits tax 71/24/5. |
 | **Epoch** | [`4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2`](https://solscan.io/account/4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2) | Epoch state machine. Requests randomness from [ORAO VRF](https://github.com/orao-network/solana-vrf), derives tax rates, triggers and executes Carnage, and finalizes staking rewards each epoch. Epoch transitions are permissionless. |
-| **Staking** | [`12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH`](https://solscan.io/account/12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH) | PROFIT staking with SOL rewards, using a cumulative reward-per-token accumulator (Synthetix/Quarry pattern). Claiming is permissionless. |
-| **Conversion Vault** | [`5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ`](https://solscan.io/account/5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ) | Fixed 100:1 conversion between CRIME/FRAUD and PROFIT. Makes no CPIs except to Token-2022. |
+| **Staking** | [`12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH`](https://solscan.io/account/12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH) | MOTION staking with SOL rewards, using a cumulative reward-per-token accumulator (Synthetix/Quarry pattern). Claiming is permissionless. |
+| **Conversion Vault** | [`5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ`](https://solscan.io/account/5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ) | Fixed 100:1 conversion between ZIG/ZAG and MOTION. Makes no CPIs except to Token-2022. |
 | **Transfer Hook** | [`CiQPQrmQh6BPhb9k7dFnsEs5gKPgdrvNKFc5xie5xVGd`](https://solscan.io/account/CiQPQrmQh6BPhb9k7dFnsEs5gKPgdrvNKFc5xie5xVGd) | Token-2022 transfer hook that only allows transfers involving whitelisted protocol accounts. Makes no outbound CPIs. |
-| **Vote** | [`8xeFnfKe6CrzS2MZoP9qVhRCAR1KX8isDpLNuurP9Lsd`](https://solscan.io/account/8xeFnfKe6CrzS2MZoP9qVhRCAR1KX8isDpLNuurP9Lsd) | Weekly stake-weighted vote by PROFIT stakers that chooses how the following week's protocol surplus is used. It records the result only; it holds no funds. |
+| **Vote** | [`8xeFnfKe6CrzS2MZoP9qVhRCAR1KX8isDpLNuurP9Lsd`](https://solscan.io/account/8xeFnfKe6CrzS2MZoP9qVhRCAR1KX8isDpLNuurP9Lsd) | Weekly stake-weighted vote by MOTION stakers that chooses how the following week's protocol surplus is used. It records the result only; it holds no funds. |
 
 ### Tokens
 
 | Token | Mint |
 |---|---|
-| CRIME | [`cRiMEhAxoDhcEuh3Yf7Z2QkXUXUMKbakhcVqmDsqPXc`](https://solscan.io/token/cRiMEhAxoDhcEuh3Yf7Z2QkXUXUMKbakhcVqmDsqPXc) |
-| FRAUD | [`FraUdp6YhtVJYPxC2w255yAbpTsPqd8Bfhy9rC56jau5`](https://solscan.io/token/FraUdp6YhtVJYPxC2w255yAbpTsPqd8Bfhy9rC56jau5) |
-| PROFIT | [`pRoFiTj36haRD5sG2Neqib9KoSrtdYMGrM7SEkZetfR`](https://solscan.io/token/pRoFiTj36haRD5sG2Neqib9KoSrtdYMGrM7SEkZetfR) |
+| ZIG | [`cRiMEhAxoDhcEuh3Yf7Z2QkXUXUMKbakhcVqmDsqPXc`](https://solscan.io/token/cRiMEhAxoDhcEuh3Yf7Z2QkXUXUMKbakhcVqmDsqPXc) |
+| ZAG | [`FraUdp6YhtVJYPxC2w255yAbpTsPqd8Bfhy9rC56jau5`](https://solscan.io/token/FraUdp6YhtVJYPxC2w255yAbpTsPqd8Bfhy9rC56jau5) |
+| MOTION | [`pRoFiTj36haRD5sG2Neqib9KoSrtdYMGrM7SEkZetfR`](https://solscan.io/token/pRoFiTj36haRD5sG2Neqib9KoSrtdYMGrM7SEkZetfR) |
 
 All three have **no mint authority and no freeze authority**, so no new tokens can ever be minted.
 
@@ -83,8 +83,8 @@ programs/
   amm/                Constant-product AMM
   tax-program/        Swap router + tax split
   epoch-program/      Epoch state machine, VRF, Carnage
-  staking/            PROFIT staking, SOL rewards
-  conversion-vault/   100:1 CRIME/FRAUD <-> PROFIT
+  staking/            MOTION staking, SOL rewards
+  conversion-vault/   100:1 ZIG/ZAG <-> MOTION
   transfer-hook/      Token-2022 whitelist hook
   vote-program/       Weekly surplus-disposal vote
 crates/arb-test-support/   Test helper (dev-dependency only, not deployed)
