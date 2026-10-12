@@ -177,4 +177,22 @@ pub mod tax_program {
     pub fn distribute_swept(ctx: Context<DistributeSwept>, lamports: u64) -> Result<()> {
         instructions::distribute_swept::handler(ctx, lamports)
     }
+
+    /// Execute a SOL -> CRIME/FRAUD swap with buy tax paid from WSOL.
+    ///
+    /// Same tax and 71/24/5 distribution as `swap_sol_buy`, but the whole
+    /// `amount_in` comes from the user's WSOL account; the tax portion is
+    /// unwrapped through the WSOL intermediary (sell-lane cycle). Built for
+    /// aggregators that hold route funds as WSOL. Faction is pool-derived.
+    ///
+    /// # Arguments
+    /// * `amount_in` - Total WSOL to spend (including tax)
+    /// * `minimum_output` - Minimum tokens expected (slippage protection)
+    pub fn swap_sol_buy_wsol<'info>(
+        ctx: Context<'_, '_, 'info, 'info, SwapSolBuyWsol<'info>>,
+        amount_in: u64,
+        minimum_output: u64,
+    ) -> Result<()> {
+        instructions::swap_sol_buy_wsol::handler(ctx, amount_in, minimum_output)
+    }
 }

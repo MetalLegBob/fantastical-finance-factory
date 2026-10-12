@@ -75,11 +75,10 @@ pub enum TaxError {
     #[msg("Tax exceeds gross output -- sell amount too small")]
     InsufficientOutput,
 
-    /// User's minimum_amount_out is below the protocol-enforced floor.
-    /// The floor is 50% of constant-product expected output.
-    /// Set minimum_amount_out to at least the floor value.
-    ///
-    /// Source: Phase 49 (SEC-10) -- prevents zero-slippage sandwich attacks
+    /// RETIRED -- never emitted. The Phase 49 (SEC-10) 50% protocol output
+    /// floor was removed on 2026-10-12 so aggregators can bound slippage on
+    /// the whole route. The variant is kept so later error codes do not
+    /// shift. Code 6017.
     #[msg("Minimum output below protocol floor (50% of expected)")]
     MinimumOutputFloorViolation,
 

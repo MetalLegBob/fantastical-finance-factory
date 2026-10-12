@@ -22,7 +22,7 @@
       "name": "Tax",
       "library": "tax_program",
       "programId": "43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj",
-      "executableHash": "c12235eb308c435f75e387d2b153db37343c492ffaf62f77dcef1445a885ac29",
+      "executableHash": "87c1ec4b39fb5e178206f7be4aba97c90eada6cf067e1bb507f1d1aae37bf8af",
       "buildImage": "solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259"
     },
     {

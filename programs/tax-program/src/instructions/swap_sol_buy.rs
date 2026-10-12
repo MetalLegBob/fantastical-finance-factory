@@ -15,15 +15,14 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::constants::{
     amm_program_id, epoch_program_id, staking_program_id, treasury_pubkey, CARNAGE_SOL_VAULT_SEED,
-    ESCROW_VAULT_SEED, MINIMUM_OUTPUT_FLOOR_BPS, STAKE_POOL_SEED, SWAP_AUTHORITY_SEED,
-    TAX_AUTHORITY_SEED,
+    ESCROW_VAULT_SEED, STAKE_POOL_SEED, SWAP_AUTHORITY_SEED, TAX_AUTHORITY_SEED,
 };
 use crate::errors::TaxError;
 use crate::events::{PoolType, SwapDirection, TaxedSwap};
 use crate::helpers::faction_pool_reader::read_faction_pool;
 use crate::helpers::pool_reader::native_mint;
 use crate::helpers::split::{execute_split_distribution, SplitDistributionAccounts};
-use crate::helpers::tax_math::{calculate_output_floor, calculate_tax};
+use crate::helpers::tax_math::calculate_tax;
 use crate::state::EpochState;
 
 // ---------------------------------------------------------------------------
@@ -146,30 +145,8 @@ pub fn handler<'info>(
     // Validate we have something to swap
     require!(sol_to_swap > 0, TaxError::InsufficientInput);
 
-    // =========================================================================
-    // 3b. Enforce protocol minimum output floor (SEC-10)
-    //
-    // Read pool reserves from raw AccountInfo bytes (no AMM crate dependency).
-    // For buy (AtoB): reserve_in = reserve_a (SOL), reserve_out = reserve_b (token).
-    // Uses sol_to_swap (post-tax), not amount_in, because tax is deducted from
-    // input before the swap. Using amount_in would compute a higher expected
-    // output than achievable, making the floor too tight.
-    // =========================================================================
-    // Pool identity, orientation, and mint accounts were bound above. Use the
-    // same derived view for the floor so identity and economics cannot diverge.
-    let sol_reserve = pool_view.quote_reserve;
-    let token_reserve = pool_view.faction_reserve;
-    let output_floor = calculate_output_floor(
-        sol_reserve,
-        token_reserve,
-        sol_to_swap,
-        MINIMUM_OUTPUT_FLOOR_BPS,
-    )
-    .ok_or(error!(TaxError::TaxOverflow))?;
-    require!(
-        minimum_output >= output_floor,
-        TaxError::MinimumOutputFloorViolation
-    );
+    // No protocol output floor: minimum_output is the caller's own slippage
+    // bound, enforced by the AMM. Aggregators set slippage on the whole route.
 
     // =========================================================================
     // 4-5. Split and execute native SOL tax distribution

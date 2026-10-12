@@ -1,15 +1,16 @@
 //! swap_sol_sell: CRIME/FRAUD -> SOL with sell tax.
 //!
-//! Sell flow (per Tax_Pool_Logic_Spec.md Section 14.3, updated Phase 48):
+//! Sell flow (per Tax_Pool_Logic_Spec.md Section 14.3; routed through the
+//! intermediary since 2026-10-12 so the destination need not be signer-owned):
 //! 1. User sends full token amount to AMM (no deduction on input)
-//! 2. AMM returns gross WSOL output to user's WSOL ATA
+//! 2. AMM returns gross WSOL output to the protocol WSOL intermediary
 //! 3. Tax calculated on gross output: tax = sol_gross * sell_tax_bps / 10_000
-//! 4. Tax WSOL transferred from user's WSOL ATA to protocol intermediary
-//! 5. Intermediary closed to swap_authority (unwraps WSOL to native SOL)
-//! 6. Native SOL distributed from swap_authority: 71% staking, 24% carnage, 5% treasury
-//! 7. Intermediary re-created and re-initialized for next sell
-//! 8. User retains net WSOL output: sol_net = sol_gross - tax
-//! 9. Slippage check: sol_net >= minimum_output (checked AFTER tax)
+//! 4. Slippage check: sol_net = sol_gross - tax >= minimum_output (AFTER tax)
+//! 5. Net WSOL forwarded intermediary -> user_token_a (swap_authority signs),
+//!    so user_token_a may be any WSOL account, e.g. an aggregator's destination
+//! 6. Intermediary (now holding exactly the tax) closed to swap_authority (unwrap)
+//! 7. Native SOL distributed from swap_authority: 71% staking, 24% carnage, 5% treasury
+//! 8. Intermediary re-created and re-initialized for the next swap
 //!
 //! Key difference from buy: Tax is applied to OUTPUT, not input.
 //! Tax is deducted from WSOL swap output (not user's native SOL balance).
@@ -28,30 +29,37 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::constants::{
     amm_program_id, epoch_program_id, staking_program_id, treasury_pubkey, CARNAGE_SOL_VAULT_SEED,
-    ESCROW_VAULT_SEED, MINIMUM_OUTPUT_FLOOR_BPS, STAKE_POOL_SEED, SWAP_AUTHORITY_SEED,
-    TAX_AUTHORITY_SEED, WSOL_INTERMEDIARY_SEED,
+    ESCROW_VAULT_SEED, STAKE_POOL_SEED, SWAP_AUTHORITY_SEED, TAX_AUTHORITY_SEED,
+    WSOL_INTERMEDIARY_SEED,
 };
 use crate::errors::TaxError;
 use crate::events::{PoolType, SwapDirection, TaxedSwap};
 use crate::helpers::faction_pool_reader::read_faction_pool;
 use crate::helpers::pool_reader::native_mint;
 use crate::helpers::split::{execute_split_distribution, SplitDistributionAccounts};
-use crate::helpers::tax_math::{calculate_output_floor, calculate_tax};
+use crate::helpers::tax_math::calculate_tax;
 use crate::state::EpochState;
+
+/// Read the live token amount from a raw token-account AccountInfo.
+fn token_amount(account: &AccountInfo<'_>) -> Result<u64> {
+    let data = account.try_borrow_data()?;
+    let mut data_slice: &[u8] = &data;
+    Ok(TokenAccount::try_deserialize(&mut data_slice)?.amount)
+}
 
 /// Execute CRIME/FRAUD -> SOL swap with sell tax on output.
 ///
 /// Flow:
 /// 1. Read and validate EpochState (dynamic tax rates)
-/// 2. Record user's WSOL balance before swap
-/// 3. Execute AMM CPI (BtoA direction: token B in, token A out)
-/// 4. Calculate gross output from balance difference
+/// 2. Record the intermediary's WSOL balance before swap
+/// 3. Execute AMM CPI (BtoA direction: token B in, WSOL out to the intermediary)
+/// 4. Calculate gross output from the intermediary's balance difference
 /// 5. Calculate tax on gross output
 /// 6. Guard: reject sells where tax >= gross_output (InsufficientOutput)
 /// 7. Check slippage: net_output >= minimum_output
 /// 8. Split tax into (staking, carnage, treasury) portions
-/// 9. Transfer tax WSOL from user to intermediary (user signs)
-/// 10. Close intermediary to swap_authority (unwraps WSOL to native SOL)
+/// 9. Forward net WSOL intermediary -> user_token_a (swap_authority signs)
+/// 10. Close intermediary to swap_authority (unwraps the tax to native SOL)
 /// 11. Distribute native SOL from swap_authority to 3 destinations
 /// 12. Re-create and re-initialize intermediary for next sell
 /// 13. Emit TaxedSwap event
@@ -141,36 +149,30 @@ pub fn handler<'info>(
     let derived_is_crime = pool_view.is_crime;
     let tax_bps = epoch_state.get_tax_bps(derived_is_crime, false);
 
-    // =========================================================================
-    // 2. Record user's WSOL balance before swap
-    // =========================================================================
-    let wsol_before = ctx.accounts.user_token_a.amount;
+    // The intermediary is a classic SPL Token account; the net forward, close
+    // and re-init below must all go through SPL Token.
+    require_keys_eq!(
+        ctx.accounts.token_program_a.key(),
+        anchor_spl::token::spl_token::ID,
+        TaxError::WsolProgramMismatch
+    );
+    // The destination must be a real WSOL account other than the protocol's
+    // own intermediary (which is closed below).
+    require_keys_neq!(
+        ctx.accounts.user_token_a.key(),
+        ctx.accounts.wsol_intermediary.key(),
+        TaxError::InvalidTokenOwner
+    );
 
     // =========================================================================
-    // 2b. Enforce protocol minimum output floor (SEC-10)
-    //
-    // For sell (BtoA): reserve_in = reserve_b (token), reserve_out = reserve_a (SOL).
-    // The floor protects against zero-slippage sandwich attacks BEFORE CPI.
-    // We verify the user's stated minimum is reasonable; the AMM then enforces
-    // actual_output >= minimum during execution.
-    //
-    // NOTE: minimum_output is checked (not gross_output) because this runs
-    // before the CPI executes. The floor catches bots/frontends that send
-    // minimum_output=0 before spending any compute on the swap.
+    // 2. Record the intermediary's WSOL balance before the swap (normally 0;
+    //    a donation is excluded from gross by the balance diff)
     // =========================================================================
-    let sol_reserve = pool_view.quote_reserve;
-    let token_reserve = pool_view.faction_reserve;
-    let output_floor = calculate_output_floor(
-        token_reserve,
-        sol_reserve,
-        amount_in,
-        MINIMUM_OUTPUT_FLOOR_BPS,
-    )
-    .ok_or(error!(TaxError::TaxOverflow))?;
-    require!(
-        minimum_output >= output_floor,
-        TaxError::MinimumOutputFloorViolation
-    );
+    let wsol_before = token_amount(&ctx.accounts.wsol_intermediary)?;
+
+    // No protocol output floor: minimum_output is the caller's own post-tax
+    // slippage bound (checked below after tax). Aggregators set slippage on
+    // the whole route.
 
     // =========================================================================
     // 3. Execute AMM CPI with direction = BtoA (token B in, token A out)
@@ -235,9 +237,9 @@ pub fn handler<'info>(
         AccountMeta::new(ctx.accounts.pool_vault_b.key(), false),           // vault_b
         AccountMeta::new_readonly(ctx.accounts.mint_a.key(), false),        // mint_a
         AccountMeta::new_readonly(ctx.accounts.mint_b.key(), false),        // mint_b
-        AccountMeta::new(ctx.accounts.user_token_a.key(), false),           // user_token_a
-        AccountMeta::new(ctx.accounts.user_token_b.key(), false),           // user_token_b
-        AccountMeta::new_readonly(ctx.accounts.user.key(), true),           // user (signer)
+        AccountMeta::new(ctx.accounts.wsol_intermediary.key(), false), // user_token_a = intermediary (gross WSOL out)
+        AccountMeta::new(ctx.accounts.user_token_b.key(), false),      // user_token_b
+        AccountMeta::new_readonly(ctx.accounts.user.key(), true),      // user (signer)
         AccountMeta::new_readonly(ctx.accounts.token_program_a.key(), false), // token_program_a
         AccountMeta::new_readonly(ctx.accounts.token_program_b.key(), false), // token_program_b
     ];
@@ -272,7 +274,7 @@ pub fn handler<'info>(
         ctx.accounts.pool_vault_b.to_account_info(),
         ctx.accounts.mint_a.to_account_info(),
         ctx.accounts.mint_b.to_account_info(),
-        ctx.accounts.user_token_a.to_account_info(),
+        ctx.accounts.wsol_intermediary.to_account_info(),
         ctx.accounts.user_token_b.to_account_info(),
         ctx.accounts.user.to_account_info(),
         ctx.accounts.token_program_a.to_account_info(),
@@ -288,10 +290,9 @@ pub fn handler<'info>(
     invoke_signed(&swap_ix, &account_infos, &[swap_authority_seeds])?;
 
     // =========================================================================
-    // 4. Calculate gross output from balance difference
+    // 4. Calculate gross output from the intermediary's balance difference
     // =========================================================================
-    ctx.accounts.user_token_a.reload()?;
-    let wsol_after = ctx.accounts.user_token_a.amount;
+    let wsol_after = token_amount(&ctx.accounts.wsol_intermediary)?;
 
     let gross_output = wsol_after
         .checked_sub(wsol_before)
@@ -320,40 +321,42 @@ pub fn handler<'info>(
     // =========================================================================
     // 8. Transfer-Close-Distribute-Reinit: WSOL intermediary tax flow
     //
-    // This replaces the old pattern of system_instruction::transfer from user.
-    // Tax is now deducted from the WSOL swap output, not the user's native SOL.
+    // The gross WSOL output sits in the protocol intermediary, so the user's
+    // destination is only ever credited (never debited) and need not be
+    // controlled by the signer.
     //
     // Steps:
-    //   a) SPL Token transfer: user_token_a -> wsol_intermediary (tax_amount)
-    //   b) SPL Token close_account: wsol_intermediary -> swap_authority (unwrap)
+    //   a) SPL Token transfer: wsol_intermediary -> user_token_a (net_output),
+    //      swap_authority signs as the intermediary's owner
+    //   b) SPL Token close_account: wsol_intermediary -> swap_authority (unwrap;
+    //      the intermediary now holds exactly the tax plus any prior donation)
     //   c) System::transfer x3: swap_authority -> staking/carnage/treasury
     //   d) System::create_account + InitializeAccount3: recreate intermediary
     // =========================================================================
 
-    // --- Step 8a: Transfer tax WSOL from user to intermediary ---
-    // User signed the top-level TX; signature propagates via CPI.
-    // Use invoke (not invoke_signed) because user is the authority.
-    let transfer_tax_ix = Instruction {
+    // --- Step 8a: Forward net WSOL from the intermediary to the destination ---
+    let forward_net_ix = Instruction {
         program_id: ctx.accounts.token_program_a.key(),
         accounts: vec![
-            AccountMeta::new(ctx.accounts.user_token_a.key(), false),
             AccountMeta::new(ctx.accounts.wsol_intermediary.key(), false),
-            AccountMeta::new_readonly(ctx.accounts.user.key(), true),
+            AccountMeta::new(ctx.accounts.user_token_a.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.swap_authority.key(), true),
         ],
         data: {
             let mut d = vec![3u8]; // SPL Token Transfer instruction discriminator
-            d.extend_from_slice(&tax_amount.to_le_bytes());
+            d.extend_from_slice(&net_output.to_le_bytes());
             d
         },
     };
-    invoke(
-        &transfer_tax_ix,
+    invoke_signed(
+        &forward_net_ix,
         &[
-            ctx.accounts.user_token_a.to_account_info(),
             ctx.accounts.wsol_intermediary.to_account_info(),
-            ctx.accounts.user.to_account_info(),
+            ctx.accounts.user_token_a.to_account_info(),
+            ctx.accounts.swap_authority.to_account_info(),
             ctx.accounts.token_program_a.to_account_info(),
         ],
+        &[swap_authority_seeds],
     )?;
 
     // --- Step 8b: Close intermediary to swap_authority (unwrap WSOL) ---
@@ -489,8 +492,9 @@ pub fn handler<'info>(
 /// Source: Tax_Pool_Logic_Spec.md Section 10.3, Phase 48 WSOL intermediary
 #[derive(Accounts)]
 pub struct SwapSolSell<'info> {
-    /// User initiating the swap - signs SPL Token transfer of tax WSOL
-    #[account(mut)]
+    /// User initiating the swap - signs SPL Token transfer of tax WSOL.
+    /// Not mutable: this lane never debits the user's native lamports, and a
+    /// read-only signer lets aggregators pass a shared program authority.
     pub user: Signer<'info>,
 
     /// EpochState account from Epoch Program.
@@ -544,7 +548,9 @@ pub struct SwapSolSell<'info> {
     pub mint_b: InterfaceAccount<'info, Mint>,
 
     // === User Token Accounts ===
-    /// User's WSOL token account - receives gross output from AMM
+    /// Destination WSOL token account - receives the NET output, forwarded by
+    /// swap_authority from the intermediary. Any WSOL account except the
+    /// intermediary; it need not be owned by the signer.
     #[account(mut)]
     pub user_token_a: InterfaceAccount<'info, TokenAccount>,
 
@@ -595,13 +601,13 @@ pub struct SwapSolSell<'info> {
     pub treasury: AccountInfo<'info>,
 
     /// Protocol-owned WSOL intermediary for atomic tax extraction.
-    /// Holds tax portion of WSOL between transfer and unwrap.
+    /// Receives the AMM's gross WSOL output; the net is forwarded to
+    /// user_token_a and the remaining tax is unwrapped.
     /// Owned by swap_authority PDA.
-    /// Closed and re-created each sell to convert WSOL -> native SOL.
+    /// Closed and re-created each swap to convert WSOL -> native SOL; every
+    /// handler that closes it recreates it before returning.
     ///
     /// CHECK: PDA derived from known seeds. Created/closed within handler.
-    /// Account may be zero-lamport (just been closed) at validation time
-    /// during same-TX sequential sells, but will be recreated within the handler.
     #[account(
         mut,
         seeds = [WSOL_INTERMEDIARY_SEED],

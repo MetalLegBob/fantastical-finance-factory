@@ -2,7 +2,7 @@
 //!
 //! CEI order mirrors the deployed donor `swap_sol_buy.rs`: validate EpochState
 //! and pause gates, derive faction identity/orientation from the pool, calculate
-//! tax and the oriented post-tax floor, skim quote tax, invoke the AMM, reload
+//! tax, skim quote tax, invoke the AMM, reload
 //! the faction output account, check realized output, then emit the accounting
 //! event. This lane has no WSOL wrapping or inline split machinery.
 //!
@@ -18,13 +18,12 @@ use anchor_lang::AccountDeserialize;
 use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
 
 use crate::constants::{
-    amm_program_id, epoch_program_id, MINIMUM_OUTPUT_FLOOR_BPS, SWAP_AUTHORITY_SEED,
-    SWEEP_AUTHORITY_SEED,
+    amm_program_id, epoch_program_id, SWAP_AUTHORITY_SEED, SWEEP_AUTHORITY_SEED,
 };
 use crate::errors::TaxError;
 use crate::events::SplSwapExecuted;
 use crate::helpers::faction_pool_reader;
-use crate::helpers::tax_math::{calculate_output_floor, calculate_tax};
+use crate::helpers::tax_math::calculate_tax;
 use crate::state::EpochState;
 
 /// Read the live base amount from either an SPL Token or Token-2022 account.
@@ -91,19 +90,6 @@ pub fn handler<'info>(
         .checked_sub(tax_amount)
         .ok_or(error!(TaxError::TaxOverflow))?;
     require!(swap_input > 0, TaxError::InsufficientInput);
-
-    // Buy floor is oriented quote -> faction and uses the post-tax AMM input.
-    let output_floor = calculate_output_floor(
-        view.quote_reserve,
-        view.faction_reserve,
-        swap_input,
-        MINIMUM_OUTPUT_FLOOR_BPS,
-    )
-    .ok_or(error!(TaxError::TaxOverflow))?;
-    require!(
-        minimum_output >= output_floor,
-        TaxError::MinimumOutputFloorViolation
-    );
 
     // The quote side is the non-faction side. transfer_checked binds its mint
     // and decimals to the pool-derived quote mint and constrained sweep ATA.
@@ -224,7 +210,7 @@ pub fn handler<'info>(
 /// Positional accounts for the generic quote -> faction taxed lane.
 #[derive(Accounts)]
 pub struct SwapSplBuy<'info> {
-    #[account(mut)]
+    /// Not mutable: only signs token transfers (aggregator PDAs may be read-only).
     pub user: Signer<'info>,
 
     /// CHECK: Owner, discriminator, and initialized state are checked in the handler.

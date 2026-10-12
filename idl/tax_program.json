@@ -1316,6 +1316,442 @@
       ]
     },
     {
+      "name": "swap_sol_buy_wsol",
+      "docs": [
+        "Execute a SOL -> CRIME/FRAUD swap with buy tax paid from WSOL.",
+        "",
+        "Same tax and 71/24/5 distribution as `swap_sol_buy`, but the whole",
+        "`amount_in` comes from the user's WSOL account; the tax portion is",
+        "unwrapped through the WSOL intermediary (sell-lane cycle). Built for",
+        "aggregators that hold route funds as WSOL. Faction is pool-derived.",
+        "",
+        "# Arguments",
+        "* `amount_in` - Total WSOL to spend (including tax)",
+        "* `minimum_output` - Minimum tokens expected (slippage protection)"
+      ],
+      "discriminator": [
+        10,
+        131,
+        6,
+        8,
+        42,
+        57,
+        81,
+        88
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "docs": [
+            "User initiating the swap - authority over user_token_a.",
+            "Not mutable: this lane never debits the user's native lamports."
+          ],
+          "signer": true
+        },
+        {
+          "name": "epoch_state",
+          "docs": [
+            "EpochState account from Epoch Program.",
+            "",
+            "- Owner check: must be Epoch Program (prevents fake 0% tax)",
+            "- Deserialization validates discriminator",
+            "- initialized flag checked"
+          ]
+        },
+        {
+          "name": "swap_authority",
+          "docs": [
+            "Tax Program's swap_authority PDA - signs AMM CPI and tax distribution.",
+            "Mutable because it receives lamports from close_account (unwrap)",
+            "and sends them to tax destinations via system transfers."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  119,
+                  97,
+                  112,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "tax_authority",
+          "docs": [
+            "Tax Program's tax_authority PDA - signs Staking Program CPI"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  97,
+                  120,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool",
+          "docs": [
+            "AMM pool state - mutable for reserve updates"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_a",
+          "docs": [
+            "Pool's WSOL vault (Token A)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "pool_vault_b",
+          "docs": [
+            "Pool's CRIME/FRAUD vault (Token B)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "mint_a",
+          "docs": [
+            "WSOL mint"
+          ]
+        },
+        {
+          "name": "mint_b",
+          "docs": [
+            "CRIME or FRAUD mint (Token-2022)"
+          ]
+        },
+        {
+          "name": "user_token_a",
+          "docs": [
+            "User's WSOL token account - pays the full amount_in (tax + swap)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "user_token_b",
+          "docs": [
+            "User's CRIME/FRAUD token account - receives AMM output"
+          ],
+          "writable": true
+        },
+        {
+          "name": "stake_pool",
+          "docs": [
+            "Staking Program's StakePool PDA - updated by deposit_rewards CPI"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  95,
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "staking_escrow",
+          "docs": [
+            "Staking Program escrow - receives 71% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                0,
+                104,
+                20,
+                179,
+                179,
+                68,
+                143,
+                0,
+                241,
+                226,
+                89,
+                81,
+                248,
+                225,
+                107,
+                223,
+                146,
+                8,
+                83,
+                115,
+                114,
+                175,
+                214,
+                74,
+                73,
+                69,
+                149,
+                93,
+                101,
+                252,
+                114,
+                58
+              ]
+            }
+          }
+        },
+        {
+          "name": "carnage_vault",
+          "docs": [
+            "Carnage Fund vault - receives 24% of tax (native SOL)"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  114,
+                  110,
+                  97,
+                  103,
+                  101,
+                  95,
+                  115,
+                  111,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                48,
+                215,
+                35,
+                39,
+                92,
+                255,
+                252,
+                177,
+                255,
+                59,
+                215,
+                14,
+                138,
+                15,
+                252,
+                42,
+                224,
+                251,
+                124,
+                63,
+                231,
+                83,
+                226,
+                150,
+                188,
+                103,
+                242,
+                205,
+                48,
+                27,
+                224,
+                209
+              ]
+            }
+          }
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "Protocol treasury - receives 5% of tax (native SOL)"
+          ],
+          "writable": true,
+          "address": "GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN"
+        },
+        {
+          "name": "wsol_intermediary",
+          "docs": [
+            "Protocol-owned WSOL intermediary (same PDA the sell lane uses).",
+            "Closed and re-created each swap to convert tax WSOL -> native SOL.",
+            ""
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  115,
+                  111,
+                  108,
+                  95,
+                  105,
+                  110,
+                  116,
+                  101,
+                  114,
+                  109,
+                  101,
+                  100,
+                  105,
+                  97,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "amm_program",
+          "docs": [
+            "AMM Program for swap CPI"
+          ],
+          "address": "5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR"
+        },
+        {
+          "name": "token_program_a",
+          "docs": [
+            "SPL Token program (for WSOL) - pinned to SPL Token in the handler"
+          ]
+        },
+        {
+          "name": "token_program_b",
+          "docs": [
+            "Token-2022 program (for CRIME/FRAUD)"
+          ]
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "System program (for native SOL transfers and account creation)"
+          ],
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "staking_program",
+          "docs": [
+            "Staking Program for deposit_rewards CPI"
+          ],
+          "address": "12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_in",
+          "type": "u64"
+        },
+        {
+          "name": "minimum_output",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "swap_sol_sell",
       "docs": [
         "Execute a CRIME/FRAUD -> SOL swap with sell tax.",
@@ -1342,9 +1778,10 @@
         {
           "name": "user",
           "docs": [
-            "User initiating the swap - signs SPL Token transfer of tax WSOL"
+            "User initiating the swap - signs SPL Token transfer of tax WSOL.",
+            "Not mutable: this lane never debits the user's native lamports, and a",
+            "read-only signer lets aggregators pass a shared program authority."
           ],
-          "writable": true,
           "signer": true
         },
         {
@@ -1454,7 +1891,9 @@
         {
           "name": "user_token_a",
           "docs": [
-            "User's WSOL token account - receives gross output from AMM"
+            "Destination WSOL token account - receives the NET output, forwarded by",
+            "swap_authority from the intermediary. Any WSOL account except the",
+            "intermediary; it need not be owned by the signer."
           ],
           "writable": true
         },
@@ -1675,12 +2114,12 @@
           "name": "wsol_intermediary",
           "docs": [
             "Protocol-owned WSOL intermediary for atomic tax extraction.",
-            "Holds tax portion of WSOL between transfer and unwrap.",
+            "Receives the AMM's gross WSOL output; the net is forwarded to",
+            "user_token_a and the remaining tax is unwrapped.",
             "Owned by swap_authority PDA.",
-            "Closed and re-created each sell to convert WSOL -> native SOL.",
-            "",
-            "Account may be zero-lamport (just been closed) at validation time",
-            "during same-TX sequential sells, but will be recreated within the handler."
+            "Closed and re-created each swap to convert WSOL -> native SOL; every",
+            "handler that closes it recreates it before returning.",
+            ""
           ],
           "writable": true,
           "pda": {
@@ -1781,7 +2220,9 @@
       "accounts": [
         {
           "name": "user",
-          "writable": true,
+          "docs": [
+            "Not mutable: only signs token transfers (aggregator PDAs may be read-only)."
+          ],
           "signer": true
         },
         {
@@ -1974,7 +2415,9 @@
       "accounts": [
         {
           "name": "user",
-          "writable": true,
+          "docs": [
+            "Not mutable: only signs token transfers (aggregator PDAs may be read-only)."
+          ],
           "signer": true
         },
         {

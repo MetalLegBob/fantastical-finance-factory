@@ -24,3 +24,6 @@ pub use withdraw_sweep::*;
 
 pub mod distribute_swept;
 pub use distribute_swept::*;
+
+pub mod swap_sol_buy_wsol;
+pub use swap_sol_buy_wsol::*;

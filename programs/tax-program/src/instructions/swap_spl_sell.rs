@@ -18,13 +18,12 @@ use anchor_lang::AccountDeserialize;
 use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
 
 use crate::constants::{
-    amm_program_id, epoch_program_id, MINIMUM_OUTPUT_FLOOR_BPS, SWAP_AUTHORITY_SEED,
-    SWEEP_AUTHORITY_SEED,
+    amm_program_id, epoch_program_id, SWAP_AUTHORITY_SEED, SWEEP_AUTHORITY_SEED,
 };
 use crate::errors::TaxError;
 use crate::events::SplSwapExecuted;
 use crate::helpers::faction_pool_reader;
-use crate::helpers::tax_math::{calculate_output_floor, calculate_tax};
+use crate::helpers::tax_math::calculate_tax;
 use crate::state::EpochState;
 
 /// Execute a generic faction -> non-SOL quote swap with output-side tax.
@@ -96,20 +95,6 @@ pub fn handler<'info>(
     );
 
     let tax_bps = epoch_state.get_tax_bps(view.is_crime, false);
-
-    // Sell floor is oriented faction -> quote. Match the deployed SOL-sell
-    // comparison: the user's post-tax minimum must meet the protocol floor.
-    let output_floor = calculate_output_floor(
-        view.faction_reserve,
-        view.quote_reserve,
-        amount_in,
-        MINIMUM_OUTPUT_FLOOR_BPS,
-    )
-    .ok_or(error!(TaxError::TaxOverflow))?;
-    require!(
-        minimum_output >= output_floor,
-        TaxError::MinimumOutputFloorViolation
-    );
 
     // Compute the gross AMM floor required to leave minimum_output after tax:
     // ceil(minimum_output * 10_000 / (10_000 - tax_bps)). This is forwarded
@@ -259,7 +244,7 @@ pub fn handler<'info>(
 /// forward; the AMM never receives or touches it.
 #[derive(Accounts)]
 pub struct SwapSplSell<'info> {
-    #[account(mut)]
+    /// Not mutable: only signs token transfers (aggregator PDAs may be read-only).
     pub user: Signer<'info>,
 
     /// CHECK: Owner, discriminator, and initialized state are checked in the handler.

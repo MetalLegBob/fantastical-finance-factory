@@ -30,16 +30,6 @@ pub const TREASURY_BPS: u128 = 500;
 /// Value: 4 lamports - minimum for meaningful 3-way split.
 pub const MICRO_TAX_THRESHOLD: u64 = 4;
 
-/// Protocol-enforced minimum output floor (50% = 5000 bps).
-/// User swaps with minimum_amount_out below this floor are rejected.
-/// Consistent with Carnage's 50% slippage floor approach.
-///
-/// At 50%, the ~1% LP fee is naturally absorbed by the generous floor.
-/// Only bots/sandwich attackers set slippage below 50% of expected output.
-///
-/// Source: Phase 49 CONTEXT.md (SEC-10)
-pub const MINIMUM_OUTPUT_FLOOR_BPS: u64 = 5000;
-
 // ---------------------------------------------------------------------------
 // Epoch Program / Carnage Integration
 // ---------------------------------------------------------------------------

@@ -143,7 +143,7 @@ The library name, build image and expected hash for every program are in
 |---|---|---|---|
 | AMM | `amm` | 3.0.13 | `57a7502842a1121860d868fab2738a32ddd8132b9ea86ed3cefa761d1984641a` |
 | Transfer Hook | `transfer_hook` | 3.0.13 | `f8ebebe5d2ee7e9b624eab9775a7d5291e4d1b93c55ef89e4212ae1682218e62` |
-| Tax | `tax_program` | 3.0.13 | `c12235eb308c435f75e387d2b153db37343c492ffaf62f77dcef1445a885ac29` |
+| Tax | `tax_program` | 3.0.13 | `87c1ec4b39fb5e178206f7be4aba97c90eada6cf067e1bb507f1d1aae37bf8af` |
 | Epoch | `epoch_program` | 2.3.0 | `ac5522b87927cb3610e2e647bbd35afb75a8a0df9015644a54e478562f81a363` |
 | Staking | `staking` | 3.0.13 | `66fea0a119f89e306b4d50667db3ee34bec5b79ce6441027852e6254240c2eb7` |
 | Conversion Vault | `conversion_vault` | 3.0.13 | `c4c92ba2af701fde91ed377e9e39d689760ac115bcecb3a3a534cc9a4764a0fd` |
