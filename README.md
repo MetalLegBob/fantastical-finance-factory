@@ -106,19 +106,18 @@ Requirements: Docker, Rust, and `solana-verify` 0.4.11
 (`cargo install solana-verify --version 0.4.11 --locked`). On Linux, install `libudev-dev` and
 `pkg-config` first.
 
-Two build images are used, because the programs were last deployed at different times:
+All seven programs are built as SBPFv3 with one image:
 
 | Image | Digest | Programs |
 |---|---|---|
-| Solana 3.0.13 | `sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259` | AMM, Transfer Hook, Tax, Staking, Conversion Vault, Vote |
-| Solana 2.3.0 | `sha256:1e6f3097794495fa968c9e07d4da6adcdabf28efc6ddb0314c2e9e72b57a7a34` | Epoch |
+| Solana 4.3.0 | `sha256:12fd4c0a0790f0fc41ef74b0cdb6bccc167ba6137eb1adb749bac649481c86bd` | all seven |
 
 ```bash
-# Example: AMM (Solana 3.0.13 image)
-IMAGE=solanafoundation/solana-verifiable-build@sha256:2ee1f4c3f0db0e1c1107ffb978b1d16b792194148852f31891adf3ee85970259
+# Example: AMM
+IMAGE=solanafoundation/solana-verifiable-build@sha256:12fd4c0a0790f0fc41ef74b0cdb6bccc167ba6137eb1adb749bac649481c86bd
 
-# 1. Build in the pinned Docker image
-solana-verify build --base-image "$IMAGE" --library-name amm
+# 1. Build in the pinned Docker image (SBPFv3)
+solana-verify build --base-image "$IMAGE" --arch v3 --library-name amm
 
 # 2. Hash your build
 solana-verify get-executable-hash target/deploy/amm.so
@@ -127,11 +126,9 @@ solana-verify get-executable-hash target/deploy/amm.so
 solana-verify get-program-hash -u mainnet-beta 5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR
 ```
 
-Steps 2 and 3 must print the same hash. For Epoch, use the Solana 2.3.0 image and
-`--library-name epoch_program`.
-
-> When switching between the two images, delete `target/` first (`rm -rf target`). Build
-> artifacts from one toolchain will make the other image's build fail.
+Steps 2 and 3 must print the same hash. For the other programs, change `--library-name`
+(`transfer_hook`, `tax_program`, `epoch_program`, `staking`, `conversion_vault`, `vote_program`)
+and the program ID.
 
 The library name, build image and expected hash for every program are in
 [`verification/mainnet-hashes.json`](verification/mainnet-hashes.json):
