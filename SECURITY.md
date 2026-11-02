@@ -4,7 +4,7 @@
 
 Please **do not** open a public issue for security problems.
 
-Report vulnerabilities privately to **drfraudsworth@gmail.com**. This is the same contact embedded in
+Report vulnerabilities privately to **fraudsworthassociation@gmail.com** (or a DM to [@fffactoryhq](https://x.com/fffactoryhq) asking for a secure channel). This is the same contact embedded in
 each program's on-chain `security.txt`. Please include:
 
 - the affected program and program ID
