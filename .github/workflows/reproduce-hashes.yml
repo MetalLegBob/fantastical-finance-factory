@@ -34,8 +34,11 @@ jobs:
         run: |
           image=$(jq -r --arg lib "${{ matrix.library }}" \
             '.programs[] | select(.library == $lib) | .buildImage' verification/mainnet-hashes.json)
-          echo "image: $image"
-          solana-verify build --base-image "$image" --library-name ${{ matrix.library }}
+          # SBPFv3 programs record "arch": "v3"; older entries have no arch (v0, the default).
+          arch=$(jq -r --arg lib "${{ matrix.library }}" \
+            '.programs[] | select(.library == $lib) | .arch // "v0"' verification/mainnet-hashes.json)
+          echo "image: $image  arch: $arch"
+          solana-verify build --base-image "$image" --arch "$arch" --library-name ${{ matrix.library }}
 
       - name: Compare executable hash
         run: |
