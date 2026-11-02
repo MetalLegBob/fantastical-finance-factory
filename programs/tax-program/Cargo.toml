@@ -18,8 +18,8 @@ path = "../amm"
 features = ["cpi"]
 
 [dev-dependencies]
-# LiteSVM integration tests live in tests-litesvm/ with their own lockfile (DEC-459);
-# only what this crate's own #[cfg(test)] unit tests use stays here.
+# Only the dependencies this crate's own #[cfg(test)] unit tests use. Integration tests
+# live in a separate workspace with their own lockfile.
 proptest = "1.9"
 solana-program = "2.2"
 spl-token = "8.0"
@@ -27,7 +27,6 @@ sha2 = "0.10"
 
 [features]
 default = []
-# conversion-vault/devnet moved to tests-litesvm/tax-program: conversion-vault is only a test dependency (DEC-459).
 devnet = ["amm/devnet"]
 localnet = []
 cpi = ["no-entrypoint"]
