@@ -351,6 +351,33 @@
               }
             ]
           }
+        },
+        {
+          "name": "arb_config",
+          "docs": [
+            "ArbConfig -- live-read pause length for the consume-anchored pause",
+            "(DEC-431/DEC-437). LAST on purpose: keepers append it before this",
+            "upgrade, and the previous program leaves a trailing extra account unread."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  98,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
         }
       ],
       "args": []
