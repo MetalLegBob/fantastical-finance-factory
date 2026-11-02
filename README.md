@@ -30,7 +30,7 @@ Three Token-2022 tokens: **ZIG**, **ZAG** and **MOTION**.
 | Program | Program ID | What it does |
 |---|---|---|
 | **AMM** | [`5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR`](https://solscan.io/account/5JsSAL3kJDUWD4ZveYXYZmgm1eVqueesTZVdAvtZg8cR) | Constant-product swap pools (Uniswap V2-style design) with Token-2022 transfer-hook support. Swaps are only reachable through the Tax program. |
-| **Tax** | [`43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj`](https://solscan.io/account/43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj) | Swap router. Reads the current epoch's tax rates, routes swaps into the AMM, applies a 50% minimum-output floor and splits tax 71/24/5. |
+| **Tax** | [`43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj`](https://solscan.io/account/43fZGRtmEsP7ExnJE1dbTbNjaP1ncvVmMPusSeksWGEj) | Swap router. Reads the current epoch's tax rates, routes swaps into the AMM and splits tax 71/24/5. |
 | **Epoch** | [`4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2`](https://solscan.io/account/4Heqc8QEjJCspHR8y96wgZBnBfbe3Qb8N6JBZMQt9iw2) | Epoch state machine. Requests randomness from [ORAO VRF](https://github.com/orao-network/solana-vrf), derives tax rates, triggers and executes Carnage, and finalizes staking rewards each epoch. Epoch transitions are permissionless. |
 | **Staking** | [`12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH`](https://solscan.io/account/12b3t1cNiAUoYLiWFEnFa4w6qYxVAiqCWU7KZuzLPYtH) | MOTION staking with SOL rewards, using a cumulative reward-per-token accumulator (Synthetix/Quarry pattern). Claiming is permissionless. |
 | **Conversion Vault** | [`5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ`](https://solscan.io/account/5uawA6ehYTu69Ggvm3LSK84qFawPKxbWgfngwj15NRJ) | Fixed 100:1 conversion between ZIG/ZAG and MOTION. Makes no CPIs except to Token-2022. |
@@ -67,8 +67,6 @@ User ──► Vote (reads Staking accounts; makes no CPIs)
   [`GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN`](https://solscan.io/account/GDY4Qu3xGNGZxXdLs1h6eoMXZgJ9aPpv7jtCaqzMoDcN)
   (multisig [`Db2Q58tTRrYDVFnybbcxNqb1DG4oLXkAKV3cL1QNMLh1`](https://solscan.io/account/Db2Q58tTRrYDVFnybbcxNqb1DG4oLXkAKV3cL1QNMLh1)).
   It is a **2-of-3 multisig and all three members are hardware wallets**.
-- **Timelock:** the multisig's timelock is currently **0** while the v2 rollout is in progress. It will be
-  restored to **4 hours (14,400 seconds)** when the rollout is complete.
 - The same vault is the transfer-hook authority on all three mints and the authority of the protocol's
   admin configuration accounts.
 - **No authority has been burned.** Keeping upgradeability lets the team patch critical bugs.
@@ -87,7 +85,6 @@ programs/
   conversion-vault/   100:1 ZIG/ZAG <-> MOTION
   transfer-hook/      Token-2022 whitelist hook
   vote-program/       Weekly surplus-disposal vote
-crates/arb-test-support/   Test helper (dev-dependency only, not deployed)
 idl/                  Anchor IDLs generated from this source
 verification/         Expected on-chain executable hashes
 ```
