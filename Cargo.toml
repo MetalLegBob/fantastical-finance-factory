@@ -7,9 +7,12 @@ members = [
     "programs/tax-program",
     "programs/transfer-hook",
     "programs/vote-program",
-    "crates/arb-test-support",
 ]
 resolver = "2"
+
+# solana-verify selects its pinned build image from this (SBPFv3 builds need the 4.3.0 toolchain).
+[workspace.metadata.cli]
+solana = "4.3.0"
 
 [profile.release]
 overflow-checks = true

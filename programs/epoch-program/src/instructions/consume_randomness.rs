@@ -12,8 +12,9 @@ use anchor_lang::prelude::*;
 use orao_solana_vrf::state::{RandomnessAccountData, RandomnessAccountVersion};
 
 use crate::constants::{
-    staking_program_id, CARNAGE_DEADLINE_SLOTS, CARNAGE_FUND_SEED, CARNAGE_LOCK_SLOTS,
-    EPOCH_SAFETY_VERSION, EPOCH_STATE_SEED, ORAO_VRF_PROGRAM_ID, STAKING_AUTHORITY_SEED,
+    staking_program_id, ARB_CONFIG_SEED, CARNAGE_DEADLINE_SLOTS, CARNAGE_FUND_SEED,
+    CARNAGE_LOCK_SLOTS, EPOCH_SAFETY_VERSION, EPOCH_STATE_SEED, ORAO_VRF_PROGRAM_ID,
+    STAKING_AUTHORITY_SEED,
 };
 use crate::errors::EpochError;
 use crate::events::{CarnageNotTriggered, CarnagePending, TaxesUpdated};
@@ -21,7 +22,7 @@ use crate::helpers::{
     derive_taxes, epoch_vrf_seed, finalize_staking_epoch, get_carnage_action, get_carnage_target,
     is_carnage_triggered, terminal_vrf_reason,
 };
-use crate::state::{CarnageAction, CarnageFundState, EpochState, Token};
+use crate::state::{ArbConfig, CarnageAction, CarnageFundState, EpochState, Token};
 
 /// Minimum VRF bytes needed for tax derivation + Carnage.
 /// Bytes 0-4: Tax (flip + 4 independent magnitude rolls)
@@ -84,6 +85,23 @@ pub struct ConsumeRandomness<'info> {
         constraint = carnage_state.initialized @ EpochError::CarnageNotInitialized,
     )]
     pub carnage_state: Account<'info, CarnageFundState>,
+
+    /// ArbConfig -- live-read pause length for the consume-anchored pause
+    /// (DEC-431/DEC-437). LAST on purpose: keepers append it before this
+    /// upgrade, and the previous program leaves a trailing extra account unread.
+    #[account(
+        seeds = [ARB_CONFIG_SEED],
+        bump = arb_config.bump,
+    )]
+    pub arb_config: Account<'info, ArbConfig>,
+}
+
+/// End of the trading pause that consume starts (DEC-431): `pause_slots` from
+/// the consume slot, but never shorter than a pause already running (the
+/// trigger pause, or a longer one). None on u64 overflow.
+pub fn consume_pause_end_slot(current_pause_end: u64, slot: u64, pause_slots: u64) -> Option<u64> {
+    slot.checked_add(pause_slots)
+        .map(|end| end.max(current_pause_end))
 }
 
 /// Handler for consume_randomness instruction.
@@ -233,6 +251,19 @@ pub fn handler(ctx: Context<ConsumeRandomness>) -> Result<()> {
         .max(tax_config.fraud_buy_tax_bps)
         .max(tax_config.fraud_sell_tax_bps);
 
+    // === 6.5. Consume-anchored trading pause (DEC-431) ===
+    // The tax flip happens HERE, not at trigger, so the post-flip correction
+    // window must start here too. Public Tax swaps stay blocked until
+    // pause_end_slot; swap_arb_wallet (ArbConfig wallets) is exempt, so the
+    // correction is the keeper's whoever calls this permissionless instruction.
+    epoch_state.pause_end_slot = consume_pause_end_slot(
+        epoch_state.pause_end_slot,
+        clock.slot,
+        ctx.accounts.arb_config.pause_slots,
+    )
+    .ok_or(EpochError::Overflow)?;
+    msg!("Trading pause until slot {}", epoch_state.pause_end_slot);
+
     // === 7. Clear VRF pending state ===
     epoch_state.vrf_pending = false;
     epoch_state.taxes_confirmed = true;
@@ -320,6 +351,31 @@ pub fn handler(ctx: Context<ConsumeRandomness>) -> Result<()> {
 mod tests {
     use super::*;
     use crate::constants::CARNAGE_DEADLINE_SLOTS;
+
+    #[test]
+    fn consume_pause_starts_at_the_consume_slot() {
+        // Trigger pause (631 + 45 = 676) already over when consume lands at 683.
+        assert_eq!(consume_pause_end_slot(676, 683, 75), Some(758));
+    }
+
+    #[test]
+    fn consume_pause_never_shortens_a_longer_running_pause() {
+        // Trigger pause still running past consume + pause_slots.
+        assert_eq!(consume_pause_end_slot(800, 683, 75), Some(800));
+        // Equal ends are a no-op.
+        assert_eq!(consume_pause_end_slot(758, 683, 75), Some(758));
+    }
+
+    #[test]
+    fn consume_pause_zero_length_ends_no_earlier_than_the_consume_slot() {
+        assert_eq!(consume_pause_end_slot(676, 683, 0), Some(683));
+        assert_eq!(consume_pause_end_slot(700, 683, 0), Some(700));
+    }
+
+    #[test]
+    fn consume_pause_overflow_is_none() {
+        assert_eq!(consume_pause_end_slot(0, u64::MAX, 1), None);
+    }
 
     #[test]
     fn test_min_vrf_bytes_constant() {

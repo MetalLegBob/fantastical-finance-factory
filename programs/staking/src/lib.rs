@@ -36,13 +36,13 @@ use solana_security_txt::security_txt;
 
 #[cfg(not(feature = "no-entrypoint"))]
 security_txt! {
-    name: "Dr Fraudsworth's Finance Factory",
-    project_url: "https://fraudsworth.fun",
-    contacts: "email:drfraudsworth@gmail.com,twitter:@fraudsworth",
-    policy: "https://fraudsworth.fun/docs/security/security-policy",
+    name: "Fantastical Finance Factory",
+    project_url: "https://fantasticalfactory.com",
+    contacts: "email:fraudsworthassociation@gmail.com,twitter:@fffactoryhq",
+    policy: "https://docs.fantasticalfactory.com/security/security-policy",
     preferred_languages: "en",
-    auditors: "Internal audits: SOS, BOK, VulnHunter (v1.3)",
-    expiry: "2027-03-20"
+    source_code: "https://github.com/MetalLegBob/fantastical-finance-factory",
+    auditors: "No external audit"
 }
 
 #[cfg(all(not(feature = "no-entrypoint"), feature = "devnet"))]
